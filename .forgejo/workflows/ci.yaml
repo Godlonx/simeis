@@ -24,7 +24,7 @@ jobs:
             .cargohome/git/db/
             target/
             supply-chain/
-          key: ${{ runner.os }}-${{ steps.cargo-lock-hash.outputs.hash }}
+          key: ${{ runner.os }}-tests-${{ steps.cargo-lock-hash.outputs.hash }}
 
       - name: "Unit tests"
         run: nix run .#unit_tests
@@ -51,7 +51,7 @@ jobs:
             .cargohome/git/db/
             target/
             supply-chain/
-          key: ${{ runner.os }}-${{ steps.cargo-lock-hash.outputs.hash }}
+          key: ${{ runner.os }}-check-${{ steps.cargo-lock-hash.outputs.hash }}
 
       - name: "Check the sanity of the Rust code"
         run: nix run .#check_rust_code
