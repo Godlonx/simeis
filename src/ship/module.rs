@@ -1,13 +1,40 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use strum::{EnumIter, IntoEnumIterator};
 
+use super::resources::Resource;
 use crate::crew::{Crew, CrewId, CrewMemberType};
+use crate::galaxy::planet::Planet;
 
-use super::shipstats::ShipStats;
+pub type ShipModuleId = u16;
+
+#[derive(EnumIter, Debug, Serialize, Deserialize)]
+pub enum ShipModuleType {
+    Miner,
+    GasSucker,
+    CargoExtension,
+}
+
+impl ShipModuleType {
+    pub fn new_module(self) -> ShipModule {
+        ShipModule {
+            operator: None,
+            modtype: self,
+        }
+    }
+
+    pub fn get_price_buy(&self) -> f64 {
+        match self {
+            ShipModuleType::Miner => 1000.0,
+            ShipModuleType::GasSucker => 2000.0,
+            ShipModuleType::CargoExtension => 5000.0,
+        }
+    }
+}
 
 #[derive(Serialize)]
-#[allow(dead_code)]
-pub enum ShipModule {
-    Miner(Option<CrewId>),
+pub struct ShipModule {
+    pub operator: Option<CrewId>,
+    pub modtype: ShipModuleType,
 }
 
 impl ShipModule {
@@ -17,32 +44,37 @@ impl ShipModule {
 
     // Returns
     pub fn need(&self, ctype: &CrewMemberType) -> bool {
-        #[allow(clippy::match_like_matches_macro)]
-        match (self, ctype) {
-            (ShipModule::Miner(None), CrewMemberType::Operator) => true,
-            _ => false,
+        match self.modtype {
+            ShipModuleType::Miner | ShipModuleType::GasSucker => {
+                ctype == &CrewMemberType::Operator && self.operator.is_none()
+            }
+            ShipModuleType::CargoExtension => false,
         }
     }
 
-    pub fn set_crew(&mut self, id: CrewId, ctype: &CrewMemberType) {
-        match (self, ctype) {
-            (ShipModule::Miner(ref mut op), CrewMemberType::Operator) => *op = Some(id),
-            _ => unreachable!(),
+    pub fn can_extract(&self, crew: &Crew, planet: &Planet) -> Vec<(Resource, f64)> {
+        let Some(ref opid) = self.operator else {
+            log::debug!("No operator");
+            return vec![];
+        };
+
+        let cm = crew.0.get(opid).unwrap();
+        let all_resources = Resource::iter().filter(|r| planet.resource_present(r));
+        match self.modtype {
+            ShipModuleType::Miner => all_resources
+                .filter(|r| r.mineable(cm.rank))
+                .map(|r| (r, self.extraction_rate(&r, cm.rank)))
+                .collect(),
+            ShipModuleType::GasSucker => all_resources
+                .filter(|r| r.suckable(cm.rank))
+                .map(|r| (r, self.extraction_rate(&r, cm.rank)))
+                .collect(),
+            _ => vec![],
         }
     }
 
-    // Define which module will be occupied by a crew member first
-    pub fn priority(&self) -> u8 {
-        match self {
-            ShipModule::Miner(_) => u8::MAX,
-        }
-    }
-
-    pub fn apply_to_stats(&self, crew: &Crew, stats: &mut ShipStats) {
-        if let ShipModule::Miner(Some(id)) = self {
-            let cm = crew.0.get(id).unwrap();
-            debug_assert!(matches!(cm.member_type, CrewMemberType::Operator));
-            stats.mining_force += (cm.rank as u32).pow(3);
-        }
+    pub fn extraction_rate(&self, resource: &Resource, oprank: u8) -> f64 {
+        let d = resource.extraction_difficulty();
+        1.0 / (d / (oprank as f64))
     }
 }

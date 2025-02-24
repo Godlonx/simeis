@@ -8,11 +8,14 @@ pub enum Errcode {
     NotEnoughMoney(f64, f64),
     InvalidArgument(&'static str),
     CrewMemberNotIdle(crate::crew::CrewId),
-    ShipAlreadyHasPilot,
     CrewNotNeeded,
     CannotPerformTravel,
     NullDistance,
     NoSuchStation(crate::galaxy::station::StationId),
+    NoSuchModule(crate::ship::module::ShipModuleId),
+    CannotExtractWithoutPlanet,
+    ShipNotInStation,
+    WrongCrewType(crate::crew::CrewMemberType),
 }
 
 impl Errcode {
@@ -27,14 +30,21 @@ impl Errcode {
                 format!("Not enough money, need {need}, got {got}")
             }
             Errcode::InvalidArgument(arg) => format!("Argument {arg} has an invalid value"),
-            Errcode::CrewMemberNotIdle(_) => todo!(),
-            Errcode::ShipAlreadyHasPilot => "This ship already has a pilot".to_string(),
+            Errcode::CrewMemberNotIdle(id) => format!("Crew member {id} is already occupied"),
             Errcode::CrewNotNeeded => "This crew member is not needed aboard this ship".to_string(),
             Errcode::CannotPerformTravel => {
                 "This travel cannot be done with the current state of the ship".to_string()
             }
             Errcode::NullDistance => "You already are on this coordinates".to_string(),
             Errcode::NoSuchStation(id) => format!("You don't own any station of id {id}"),
+            Errcode::NoSuchModule(id) => format!("Ship module of id {id} doesn't exist"),
+            Errcode::CannotExtractWithoutPlanet => {
+                "Cannot extract resources, this ship is not on a planet".to_string()
+            }
+            Errcode::ShipNotInStation => "This ship is not docked on station".to_string(),
+            Errcode::WrongCrewType(ctype) => {
+                format!("This module requires a crew member of type {ctype:?}")
+            }
         }
     }
 }

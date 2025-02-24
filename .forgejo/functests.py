@@ -1,4 +1,6 @@
+import os
 import sys
+import math
 import time
 import json
 import requests
@@ -6,6 +8,8 @@ import traceback
 import urllib.parse
 
 TESTS = []
+
+FAILFAST=os.getenv("CI") is None
 
 def functest(f):
     assert f.__name__.startswith("test_")
@@ -124,7 +128,7 @@ class Tester:
     def setup_crew(self, shipid):
         pilot = self.assert_ok(f"/station/{self.station}/crew/hire/pilot")
         pilotid = self.assert_got(pilot, "id", None)
-        self.assert_ok(f"/station/{self.station}/crew/assign/{pilotid}/{shipid}")
+        self.assert_ok(f"/station/{self.station}/crew/assign/{pilotid}/{shipid}/0")
 
     def assert_ok(self, endpoint, **kwargs):
         got = self.request(endpoint, **kwargs)
@@ -203,7 +207,7 @@ class Tester:
         ships = {}
         for ship in shiplist:
             self.assert_got(ship, "id", None)
-            self.assert_got(ship, "modules", [])
+            self.assert_got(ship, "modules", {})
             self.assert_got(ship, "reactor_power", None)
             self.assert_got(ship, "cargo_capacity", None)
             self.assert_got(ship, "fuel_tank_capacity", None)
@@ -263,18 +267,19 @@ class Tester:
         pilot = self.assert_ok(f"/station/{self.station}/crew/hire/pilot")
         pilot2 = self.assert_ok(f"/station/{self.station}/crew/hire/pilot")
         operator = self.assert_ok(f"/station/{self.station}/crew/hire/operator")
+        operator2 = self.assert_ok(f"/station/{self.station}/crew/hire/operator")
 
         idle = self.assert_ok(f"/station/{self.station}/crew/idle")
-        assert len(self.assert_got(idle, "idle", None)) == 3
+        assert len(self.assert_got(idle, "idle", None)) == 4
 
         shipstatus = self.assert_ok(f"/ship/{shipid}")
         stats = self.assert_got(shipstatus, "stats", None)
         speed = self.assert_got(stats, "speed", None)
         assert speed == 0
 
-        self.assert_ok(f"/station/{self.station}/crew/assign/" + str(pilot["id"]) + f"/{shipid}")
+        self.assert_ok(f"/station/{self.station}/crew/assign/" + str(pilot["id"]) + f"/{shipid}/0")
         idle = self.assert_ok(f"/station/{self.station}/crew/idle")
-        assert len(self.assert_got(idle, "idle", None)) == 2
+        assert len(self.assert_got(idle, "idle", None)) == 3
 
         shipstatus = self.assert_ok(f"/ship/{shipid}")
         self.assert_got(shipstatus, "crew", { str(pilot["id"]): { "member_type": "Pilot", "rank": 1 }})
@@ -284,16 +289,22 @@ class Tester:
         assert speed_after > 0
 
         self.assert_error(
-            f"/station/{self.station}/crew/assign/" + str(pilot2["id"]) + f"/{shipid}",
-            errtype="ShipAlreadyHasPilot",
+            f"/station/{self.station}/crew/assign/" + str(pilot2["id"]) + f"/{shipid}/0",
+            errtype="CrewNotNeeded",
         )
         idle = self.assert_ok(f"/station/{self.station}/crew/idle")
-        assert len(self.assert_got(idle, "idle", None)) == 2
+        assert len(self.assert_got(idle, "idle", None)) == 3
         shipstatus_after = self.assert_ok(f"/ship/{shipid}")
         assert shipstatus == shipstatus_after
 
         operatorid = self.assert_got(operator, "id", None)
-        self.assert_error(f"/station/{self.station}/crew/assign/{operatorid}/{shipid}", errtype="CrewNotNeeded")
+        self.assert_error(f"/station/{self.station}/crew/assign/{operatorid}/{shipid}/0", errtype="WrongCrewType(Pilot)")
+
+        got = self.assert_ok(f"/station/{self.station}/shop/modules/{shipid}/buy/miner")
+        modid = self.assert_got(got, "id", 1)
+        self.assert_ok(f"/station/{self.station}/crew/assign/{operatorid}/{shipid}/1")
+        self.assert_error(f"/station/{self.station}/crew/assign/{operatorid}/{shipid}/1", errtype=f"CrewMemberNotIdle({operatorid})")
+        self.assert_error(f"/station/{self.station}/crew/assign/{operator2["id"]}/{shipid}/1", errtype="CrewNotNeeded")
 
     @functest
     def test_travel(self):
@@ -386,7 +397,6 @@ class Tester:
         self.create_test_player()
 
         scan = self.assert_ok(f"/station/{self.station}/scan")
-        print(scan)
 
         planets = self.assert_got(scan, "planets", None)
         assert len(planets) > 0
@@ -394,6 +404,61 @@ class Tester:
         stations = self.assert_got(scan, "stations", None)
         assert len(stations) > 0
         assert any([sta["id"] == int(self.station) for sta in stations])
+
+    @functest
+    def test_extract(self):
+        self.create_test_player("test-rich-extract")
+        shipid = self.buy_a_ship()
+        self.setup_crew(shipid)
+
+        got = self.assert_ok(f"/station/{self.station}/shop/modules/{shipid}/buy/miner")
+        modid = self.assert_got(got, "id", 1)
+        operator = self.assert_ok(f"/station/{self.station}/crew/hire/operator")
+        opid = self.assert_got(operator, "id", None)
+        self.assert_ok(f"/station/{self.station}/crew/assign/{opid}/{shipid}/{modid}")
+
+        got = self.assert_ok(f"/station/{self.station}/shop/modules/{shipid}/buy/gassucker")
+        modid = self.assert_got(got, "id", 2)
+        operator = self.assert_ok(f"/station/{self.station}/crew/hire/operator")
+        opid = self.assert_got(operator, "id", None)
+        self.assert_ok(f"/station/{self.station}/crew/assign/{opid}/{shipid}/{modid}")
+        self.addtrace("Got ship all set up")
+
+        scan = self.assert_ok(f"/station/{self.station}/scan")
+        ship = self.assert_ok(f"/ship/{shipid}")
+        distances = []
+        for planet in self.assert_got(scan, "planets", None):
+            distances.append((planet, compute_distance(planet["position"], ship["position"])))
+
+        best = sorted(distances, key=lambda f: f[1])[0][0]
+        self.addtrace("Traveling to", best)
+
+        cost = self.assert_ok(
+            f"/ship/{shipid}/navigate",
+            method="POST",
+            body=dict(destination=best["position"])
+        )
+        time.sleep(cost["duration"] + 0.2)
+
+        ship = self.assert_ok(f"/ship/{shipid}")
+        self.assert_got(ship, "state", "Idle")
+        self.addtrace("Ship arrived")
+        got = self.assert_ok(f"/ship/{shipid}/extraction/start")
+        assert ("Stone" in got) or ("Helium" in got)
+        time.sleep(0.5)
+        before = self.assert_ok(f"/ship/{shipid}")
+        cargob = self.assert_got(before, "cargo", None)
+        time.sleep(0.5)
+        after = self.assert_ok(f"/ship/{shipid}")
+        cargoa = self.assert_got(after, "cargo", None)
+        assert cargob["usage"] < cargoa["usage"]
+
+def compute_distance(a, b):
+    sum = 0
+    sum += (b[0] - a[0]) ** 2
+    sum += (b[1] - a[1]) ** 2
+    sum += (b[2] - a[2]) ** 2
+    return math.sqrt(sum)
 
 if __name__ == "__main__":
     t = Tester(sys.argv[1], sys.argv[2])
@@ -406,7 +471,15 @@ if __name__ == "__main__":
         except AssertionError as exc:
             t.disp_error(exc)
             nerrors += 1
-    print(f"\nAll tests finished, {nok} OK, {nerrors} ERR\n")
+            if FAILFAST:
+                break;
+    if FAILFAST and nerrors > 0:
+        print("")
+        print("")
+        print("FAIL FAST")
+        print("")
+    else:
+        print(f"\nAll tests finished, {nok} OK, {nerrors} ERR\n")
 
     for (key, errdata) in t.saved_errors.items():
         side = (50 - len(key)) // 2

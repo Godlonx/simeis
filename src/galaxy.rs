@@ -169,6 +169,15 @@ impl Galaxy {
         Some(station.clone())
     }
 
+    pub fn get_planet(&self, coord: &SpaceCoord) -> Option<Arc<RwLock<planet::Planet>>> {
+        let galaxy = self.0.read().unwrap();
+        let obj = galaxy.get(coord)?;
+        let SpaceObject::Planet(planet) = obj else {
+            return None;
+        };
+        Some(planet.clone())
+    }
+
     pub fn scan_sector(&self, center: &SpaceCoord, strengh: f64) -> ScanResult {
         let mut results = ScanResult::empty();
         for sector in sectors_around(center, strengh) {

@@ -5,6 +5,7 @@ use std::thread::JoinHandle;
 
 use crate::galaxy::Galaxy;
 use crate::player::{Player, PlayerId, PlayerKey};
+use crate::ship::ShipState;
 
 const ITER_PERIOD: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -53,12 +54,24 @@ impl Game {
             player.update_money(ITER_PERIOD.as_secs_f64());
             let mut deadship = vec![];
             for (id, ship) in player.ships.iter_mut() {
-                let finished = ship.update_flight(ITER_PERIOD.as_secs_f64());
-                if finished {
-                    ship.state = crate::ship::ShipState::Idle;
-                    if ship.hull_decay >= ship.hull_decay_capacity {
-                        deadship.push(*id);
+                match ship.state {
+                    ShipState::InFlight(..) => {
+                        let finished = ship.update_flight(ITER_PERIOD.as_secs_f64());
+                        if finished {
+                            ship.state = ShipState::Idle;
+                            if ship.hull_decay >= ship.hull_decay_capacity {
+                                deadship.push(*id);
+                            }
+                        }
                     }
+
+                    ShipState::Extracting(..) => {
+                        let finished = ship.update_extract(ITER_PERIOD.as_secs_f64());
+                        if finished {
+                            ship.state = ShipState::Idle;
+                        }
+                    }
+                    _ => {}
                 }
             }
             for id in deadship {

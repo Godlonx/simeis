@@ -11,6 +11,7 @@ use crate::api::ApiResult;
 use crate::errors::Errcode;
 use crate::galaxy::station::{Station, StationId};
 use crate::galaxy::SpaceCoord;
+use crate::ship::module::{ShipModuleId, ShipModuleType};
 use crate::ship::{Ship, ShipId};
 use crate::GameState;
 
@@ -81,6 +82,34 @@ impl Player {
             self.lost = true;
             // TODO (#19)  What to do with its resources, ships, etc...
         }
+    }
+
+    pub fn buy_ship_module(
+        &mut self,
+        station_id: &StationId,
+        ship_id: &ShipId,
+        modtype: ShipModuleType,
+    ) -> Result<ShipModuleId, Errcode> {
+        let Some(station) = self.stations.get(station_id) else {
+            return Err(Errcode::NoSuchStation(*station_id));
+        };
+
+        let Some(ship) = self.ships.get_mut(ship_id) else {
+            return Err(Errcode::ShipNotFound(*ship_id));
+        };
+
+        if station != &ship.position {
+            return Err(Errcode::ShipNotInStation);
+        }
+
+        let price = modtype.get_price_buy();
+        if self.money < price {
+            return Err(Errcode::NotEnoughMoney(self.money, price));
+        }
+        self.money -= price;
+        let id = (ship.modules.len() + 1) as ShipModuleId;
+        ship.modules.insert(id, modtype.new_module());
+        Ok(id)
     }
 }
 

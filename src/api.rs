@@ -1,12 +1,16 @@
+use std::collections::HashMap;
+
 use base64::{prelude::BASE64_STANDARD, Engine};
 use ntex::web::types::{Json, Path};
 use ntex::web::{self, HttpRequest, HttpResponse, ServiceConfig};
 use serde_json::{json, Value};
+use strum::IntoEnumIterator;
 
 use crate::crew::CrewId;
 use crate::errors::Errcode;
 use crate::galaxy::station::StationId;
 use crate::player::{PlayerId, PlayerKey, ReqNewPlayer};
+use crate::ship::module::{ShipModuleId, ShipModuleType};
 use crate::ship::navigation::Travel;
 use crate::ship::ShipId;
 use crate::GameState;
@@ -151,20 +155,22 @@ async fn hire_crew(
     build_response(crate::crew::hire_crew(player, station, crewtype))
 }
 
-#[web::get("/station/{station_id}/crew/assign/{crewid}/{shipid}")]
+#[web::get("/station/{station_id}/crew/assign/{crewid}/{shipid}/{modid}")]
 async fn assign_crew(
-    args: Path<(StationId, CrewId, ShipId)>,
+    args: Path<(StationId, CrewId, ShipId, ShipModuleId)>,
     srv: GameState,
     req: HttpRequest,
 ) -> impl web::Responder {
-    let (station_id, crew_id, ship_id) = args.as_ref();
+    let (station_id, crew_id, ship_id, modid) = args.as_ref();
     let player = get_player!(srv, req);
     let station = get_station!(srv, player, station_id);
     let mut player = player.write().unwrap();
     let Some(ship) = player.ships.get_mut(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
-    build_response(crate::crew::assign_ship(*crew_id, station, ship))
+    build_response(crate::crew::assign_crew_member(
+        *crew_id, station, ship, modid,
+    ))
 }
 
 #[web::get("/station/{station_id}/scan")]
@@ -173,6 +179,32 @@ async fn scan(id: Path<StationId>, srv: GameState, req: HttpRequest) -> impl web
     let station = get_station!(srv, player, id.as_ref());
     let results = station.read().unwrap().scan(&srv.galaxy);
     build_response(Ok(results.to_json()))
+}
+
+#[web::get("/station/{station_id}/shop/modules/{ship_id}/buy/{modtype}")]
+async fn buy_ship_module(
+    srv: GameState,
+    args: Path<(StationId, ShipId, String)>,
+    req: HttpRequest,
+) -> impl web::Responder {
+    let (station_id, ship_id, modtype) = args.as_ref();
+    let player = get_player!(srv, req);
+    let modtype = match modtype.as_str() {
+        "miner" => ShipModuleType::Miner,
+        "gassucker" => ShipModuleType::GasSucker,
+        "cargoext" => ShipModuleType::CargoExtension,
+        _ => return build_response(Err(Errcode::InvalidArgument("modtype"))),
+    };
+    let mut player = player.write().unwrap();
+    build_response(
+        player
+            .buy_ship_module(station_id, ship_id, modtype)
+            .map(|v| {
+                serde_json::json!({
+                    "id": v,
+                })
+            }),
+    )
 }
 
 #[web::get("/ship/{ship_id}")]
@@ -222,6 +254,32 @@ async fn ask_navigate(
     )
 }
 
+#[web::get("/ship/{ship_id}/extraction/start")]
+async fn start_extraction(
+    srv: GameState,
+    id: Path<ShipId>,
+    req: HttpRequest,
+) -> impl web::Responder {
+    let player = get_player!(srv, req);
+    let mut player = player.write().unwrap();
+    let Some(ship) = player.ships.get_mut(id.as_ref()) else {
+        return build_response(Err(Errcode::ShipNotFound(*id)));
+    };
+    build_response(
+        ship.start_extraction(&srv.galaxy)
+            .map(|v| serde_json::to_value(v).unwrap()),
+    )
+}
+
+#[web::get("/prices/ship_module")]
+async fn get_prices_ship_module() -> impl web::Responder {
+    let mut res: HashMap<String, f64> = HashMap::new();
+    for smod in ShipModuleType::iter() {
+        res.insert(format!("{smod:?}"), smod.get_price_buy());
+    }
+    build_response(Ok(serde_json::to_value(res).unwrap()))
+}
+
 pub fn configure(srv: &mut ServiceConfig) {
     srv.service(ping)
         .service(hire_crew)
@@ -229,9 +287,12 @@ pub fn configure(srv: &mut ServiceConfig) {
         .service(assign_crew)
         .service(get_ship_status)
         .service(shipyard_buy)
+        .service(get_prices_ship_module)
+        .service(buy_ship_module)
         .service(list_shipyard_ships)
         .service(ask_navigate)
         .service(compute_travel_costs)
+        .service(start_extraction)
         .service(scan)
         .service(get_player)
         .service(new_player);

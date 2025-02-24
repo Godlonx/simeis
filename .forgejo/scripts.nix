@@ -32,7 +32,7 @@
           kill "$(jobs -p)"
 
           echo "Server logs:"
-          cat /tmp/simeis_logs
+          tail -n 20 /tmp/simeis_logs
           rm /tmp/simeis_logs
           exit 1;
         fi

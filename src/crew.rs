@@ -9,7 +9,7 @@ use crate::api::ApiResult;
 use crate::errors::Errcode;
 use crate::galaxy::station::Station;
 use crate::player::Player;
-use crate::ship::module::ShipModule;
+use crate::ship::module::ShipModuleId;
 use crate::ship::Ship;
 
 pub type CrewId = u32;
@@ -17,48 +17,38 @@ pub type CrewId = u32;
 #[derive(Default, Serialize)]
 pub struct Crew(pub BTreeMap<CrewId, CrewMember>);
 impl Crew {
-    pub fn onboard(&mut self, id: CrewId, ship: &mut Ship) -> Result<(), Errcode> {
+    pub fn onboard(
+        &mut self,
+        id: CrewId,
+        ship: &mut Ship,
+        modid: &ShipModuleId,
+    ) -> Result<(), Errcode> {
         let Some(cm) = self.0.get(&id) else {
             return Err(Errcode::CrewMemberNotIdle(id));
         };
-
-        let res = match &cm.member_type {
-            CrewMemberType::Pilot => {
-                if ship.pilot.is_none() {
-                    ship.pilot = Some(id);
-                    Ok(())
-                } else {
-                    Err(Errcode::ShipAlreadyHasPilot)
+        if *modid == 0 {
+            if cm.member_type == CrewMemberType::Pilot {
+                if ship.pilot.is_some() {
+                    return Err(Errcode::CrewNotNeeded);
                 }
+                ship.pilot = Some(id);
+                ship.crew.0.insert(id, self.0.remove(&id).unwrap());
+                ship.update_perf_stats();
+                return Ok(());
+            } else {
+                return Err(Errcode::WrongCrewType(CrewMemberType::Pilot));
             }
-            ctype => {
-                let mut modules = ship
-                    .modules
-                    .iter_mut()
-                    .filter(|m| m.need(ctype))
-                    .collect::<Vec<&mut ShipModule>>();
-
-                if modules.is_empty() {
-                    Err(Errcode::CrewNotNeeded)
-                } else if modules.len() == 1 {
-                    let module = modules.first_mut().unwrap();
-                    module.set_crew(id, ctype);
-                    Ok(())
-                } else {
-                    modules.sort_by_key(|a| a.priority());
-                    let module = modules.last_mut().unwrap();
-                    module.set_crew(id, ctype);
-                    Ok(())
-                }
-            }
-        };
-
-        if res.is_ok() {
-            ship.crew.0.insert(id, self.0.remove(&id).unwrap());
-            ship.update_perf_stats()
         }
 
-        res
+        let Some(smod) = ship.modules.get_mut(modid) else {
+            return Err(Errcode::NoSuchModule(*modid));
+        };
+        if !smod.need(&cm.member_type) {
+            return Err(Errcode::CrewNotNeeded);
+        }
+        smod.operator = Some(id);
+        ship.crew.0.insert(id, self.0.remove(&id).unwrap());
+        Ok(())
     }
 
     pub fn sum_wages(&self) -> f64 {
@@ -95,7 +85,7 @@ impl CrewMember {
 }
 
 #[allow(dead_code)]
-#[derive(Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub enum CrewMemberType {
     Pilot,
     Operator,
@@ -103,8 +93,17 @@ pub enum CrewMemberType {
     Soldier,
 }
 
-pub fn assign_ship(id: CrewId, station: Arc<RwLock<Station>>, ship: &mut Ship) -> ApiResult {
-    station.write().unwrap().idle_crew.onboard(id, ship)?;
+pub fn assign_crew_member(
+    id: CrewId,
+    station: Arc<RwLock<Station>>,
+    ship: &mut Ship,
+    modid: &ShipModuleId,
+) -> ApiResult {
+    station
+        .write()
+        .unwrap()
+        .idle_crew
+        .onboard(id, ship, modid)?;
     Ok(serde_json::json!({}))
 }
 
