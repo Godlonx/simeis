@@ -434,12 +434,14 @@ class Tester:
         ship = self.assert_ok(f"/ship/{shipid}")
         self.assert_got(ship, "state", "Idle")
         self.addtrace("Ship arrived")
-        got = self.assert_ok(f"/ship/{shipid}/extraction/start")
-        assert ("Stone" in got) or ("Helium" in got)
+        extraction_rates = self.assert_ok(f"/ship/{shipid}/extraction/start")
+        assert ("Stone" in extraction_rates) or ("Helium" in extraction_rates)
         time.sleep(0.5)
+
         before = self.assert_ok(f"/ship/{shipid}")
         cargob = self.assert_got(before, "cargo", None)
         time.sleep(0.5)
+
         after = self.assert_ok(f"/ship/{shipid}")
         cargoa = self.assert_got(after, "cargo", None)
         assert cargob["usage"] < cargoa["usage"]
@@ -578,7 +580,6 @@ class Tester:
         assert after["reactor_power"] > before["reactor_power"]
         assert after["hull_decay_capacity"] > before["hull_decay_capacity"]
 
-    # Uses environment of previous test
     @functest
     def test_repair_refuel(self):
         player = self.create_test_player("test-rich-refuel-repair")
@@ -621,6 +622,56 @@ class Tester:
         self.assert_ok(f"/market/{self.station}/buy/hullplate/{need[1] * 2}")
         got = self.assert_ok(f"/station/{self.station}/repair/{shipid}")
         self.assert_got(got, "added-hull", need[1])
+
+    @functest
+    def test_upgrade_modules(self):
+        player = self.create_test_player("test-rich-ship-mod-upgrade")
+        shipid =  self.buy_a_ship()
+        self.setup_crew(shipid)
+
+        scan = self.assert_ok(f"/station/{self.station}/scan")
+        ship = self.assert_ok(f"/ship/{shipid}")
+        stationpos = ship["position"]
+        distances = []
+        for planet in self.assert_got(scan, "planets", None):
+            distances.append((planet, compute_distance(planet["position"], ship["position"])))
+        best = sorted(distances, key=lambda f: f[1])[0][0]
+        if best["solid"]:
+            mod = "miner"
+        else:
+            mod = "gassucker"
+
+        got = self.assert_ok(f"/station/{self.station}/shop/modules/{shipid}/buy/{mod}")
+        modid = self.assert_got(got, "id", 1)
+        operator = self.assert_ok(f"/station/{self.station}/crew/hire/operator")
+        opid = self.assert_got(operator, "id", None)
+        self.assert_ok(f"/station/{self.station}/crew/assign/{opid}/{shipid}/{modid}")
+
+        dest = best["position"]
+        cost = self.assert_ok(f"/ship/{shipid}/navigate/{dest[0]}/{dest[1]}/{dest[2]}")
+        time.sleep(cost["duration"] + 0.2)
+
+        ship = self.assert_ok(f"/ship/{shipid}")
+        self.assert_got(ship, "state", "Idle")
+        self.addtrace("Ship arrived")
+        old_extraction_rates = self.assert_ok(f"/ship/{shipid}/extraction/start")
+        assert ("Stone" in old_extraction_rates) or ("Helium" in old_extraction_rates)
+        time.sleep(0.5)
+        self.assert_ok(f"/ship/{shipid}/extraction/stop")
+
+        cost = self.assert_ok(f"/ship/{shipid}/navigate/{stationpos[0]}/{stationpos[1]}/{stationpos[2]}")
+        time.sleep(cost["duration"] + 0.2)
+
+        got = self.assert_ok(f"/station/{self.station}/shop/modules/{shipid}/upgrade/1")
+        self.assert_got(got, "cost", 5000)
+        self.assert_got(got, "new-rank", 2)
+
+        cost = self.assert_ok(f"/ship/{shipid}/navigate/{dest[0]}/{dest[1]}/{dest[2]}")
+        time.sleep(cost["duration"] + 0.2)
+
+        new_extraction_rates = self.assert_ok(f"/ship/{shipid}/extraction/start")
+        for res, rate in new_extraction_rates.items():
+            assert rate > old_extraction_rates[res]
 
 def compute_distance(a, b):
     sum = 0

@@ -5,6 +5,8 @@ use super::resources::Resource;
 use crate::crew::{Crew, CrewId, CrewMemberType};
 use crate::galaxy::planet::Planet;
 
+const MOD_UPG_BASE_PRICE: f64 = 5000.0;
+
 pub type ShipModuleId = u16;
 
 #[derive(
@@ -30,6 +32,8 @@ impl ShipModuleType {
         ShipModule {
             operator: None,
             modtype: self,
+            totalcost: 0.0,
+            rank: 1,
         }
     }
 
@@ -45,11 +49,13 @@ impl ShipModuleType {
 pub struct ShipModule {
     pub operator: Option<CrewId>,
     pub modtype: ShipModuleType,
+    pub rank: u8,
+    pub totalcost: f64,
 }
 
 impl ShipModule {
-    pub fn compute_price(&self) -> f64 {
-        0.0
+    pub fn price_next_rank(&self) -> f64 {
+        MOD_UPG_BASE_PRICE.powf(self.rank as f64)
     }
 
     // Returns
@@ -85,7 +91,8 @@ impl ShipModule {
     }
 
     pub fn extraction_rate(&self, resource: &Resource, oprank: u8, density: f64) -> f64 {
+        let pow = (self.rank as f64).sqrt();
         let d = resource.extraction_difficulty();
-        density / (d / (oprank as f64))
+        (density / (d / (oprank as f64))).powf(pow)
     }
 }

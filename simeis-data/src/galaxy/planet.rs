@@ -8,8 +8,8 @@ use super::SpaceCoord;
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct PlanetInfo {
     pub position: SpaceCoord,
-    temperature: u16,
-    solid: bool,
+    pub temperature: u16,
+    pub solid: bool,
 }
 
 impl PlanetInfo {

@@ -126,4 +126,30 @@ impl Player {
         upgrade.install(ship);
         Ok(price)
     }
+
+    pub fn buy_ship_module_upgrade(
+        &mut self,
+        station: &Station,
+        ship_id: &ShipId,
+        mod_id: &ShipModuleId,
+    ) -> Result<(f64, u8), Errcode> {
+        let Some(ship) = self.ships.get_mut(ship_id) else {
+            return Err(Errcode::ShipNotFound(*ship_id));
+        };
+        if ship.position != station.position {
+            return Err(Errcode::ShipNotInStation);
+        }
+        let Some(ref mut module) = ship.modules.get_mut(mod_id) else {
+            return Err(Errcode::NoSuchModule(*mod_id));
+        };
+        let price = module.price_next_rank();
+        if price > self.money {
+            return Err(Errcode::NotEnoughMoney(self.money, price));
+        }
+
+        self.money -= price;
+        module.rank += 1;
+
+        Ok((price, module.rank))
+    }
 }

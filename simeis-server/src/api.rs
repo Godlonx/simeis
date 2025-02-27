@@ -309,6 +309,59 @@ async fn buy_ship_module(
     )
 }
 
+#[web::get("/station/{station_id}/shop/modules/{ship_id}/upgrade")]
+async fn get_ship_module_upgrade_prices(
+    srv: GameState,
+    args: Path<(StationId, ShipId)>,
+    req: HttpRequest,
+) -> impl web::Responder {
+    let (station_id, ship_id) = args.as_ref();
+    let player = get_player!(srv, req);
+    let station = get_station!(srv, player, station_id);
+    let player = player.read().unwrap();
+    let Some(ship) = player.ships.get(ship_id) else {
+        return build_response(Err(Errcode::ShipNotFound(*ship_id)));
+    };
+    if ship.position != station.read().unwrap().position {
+        return build_response(Err(Errcode::ShipNotInStation));
+    }
+
+    let mut res = BTreeMap::new();
+    for (id, smod) in ship.modules.iter() {
+        res.insert(
+            id,
+            serde_json::json!({
+                "module-type": smod.modtype,
+                "price": smod.price_next_rank(),
+            }),
+        );
+    }
+    build_response(Ok(serde_json::to_value(res).unwrap()))
+}
+
+#[web::get("/station/{station_id}/shop/modules/{ship_id}/upgrade/{modid}")]
+async fn buy_ship_module_upgrade(
+    srv: GameState,
+    args: Path<(StationId, ShipId, ShipModuleId)>,
+    req: HttpRequest,
+) -> impl web::Responder {
+    let (station_id, ship_id, mod_id) = args.as_ref();
+    let player = get_player!(srv, req);
+    let station = get_station!(srv, player, station_id);
+    let mut player = player.write().unwrap();
+    let station = station.read().unwrap();
+    build_response(
+        player
+            .buy_ship_module_upgrade(&station, ship_id, mod_id)
+            .map(|(c, r)| {
+                serde_json::json!({
+                    "new-rank": r,
+                    "cost": c,
+                })
+            }),
+    )
+}
+
 #[web::get("/station/{station_id}/shop/cargo/buy/{amount}")]
 async fn buy_station_cargo(
     srv: GameState,
@@ -596,6 +649,8 @@ pub fn configure(srv: &mut ServiceConfig) {
         .service(shipyard_buy_upgrade)
         .service(shipyard_list_upgrades)
         .service(buy_ship_module)
+        .service(get_ship_module_upgrade_prices)
+        .service(buy_ship_module_upgrade)
         .service(get_prices_ship_module)
         .service(start_extraction)
         .service(stop_extraction)
