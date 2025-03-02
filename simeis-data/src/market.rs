@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 
 use crate::{crew::CrewMember, ship::resources::Resource};
 
-const MAX_AVG_AMPL: f64 = 5.0 / 100.0;
+const MAX_AVG_AMPL: f64 = 2.0 / 100.0;
 pub const MARKET_CHANGE_SEC: f64 = 20.0;
 const BASE_FEE_RATE: f64 = 20.0 / 100.0;
 const FEE_RATE_DEC_POWF: f64 = 1.3;

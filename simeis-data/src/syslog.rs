@@ -156,6 +156,7 @@ pub enum SyslogEvent {
         station_cargo: crate::ship::cargo::ShipCargo,
         ship_cargo: crate::ship::cargo::ShipCargo,
     },
+    LowFunds(std::time::Duration),
 }
 
 #[test]

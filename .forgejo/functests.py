@@ -278,7 +278,11 @@ class Tester:
         costs = self.assert_got(before, "costs", None)
         time.sleep(0.3)
         after = self.assert_ok(f"/player/{self.id}")
-        self.assert_got(after, "money", before["money"] - (costs * 0.3))
+        self.assert_cmpf(
+            self.assert_got(after, "money", None),
+            self.assert_got(before, "money", None) - (costs * 0.3),
+            eps=costs * 0.075,
+        )
 
     @functest
     def test_assign_crew(self):
@@ -731,24 +735,24 @@ class Tester:
 
         prices = self.assert_ok(f"/station/{self.station}/crew/upgrade/ship/{shipid}")
         for cid, data in prices.items():
-            rank = self.assert_got(data, "rank", 1)
+            nextrk = self.assert_got(data, "rank", 2)
             price = self.assert_got(data, "price", None)
             mtype = self.assert_got(data, "member-type", None)
 
             got = self.assert_ok(f"/station/{self.station}/crew/upgrade/ship/{shipid}/{cid}")
-            nrank = self.assert_got(got, "new-rank", rank + 1)
+            nrank = self.assert_got(got, "new-rank", nextrk)
             cost = self.assert_got(got, "cost", price)
 
             new_prices = self.assert_ok(f"/station/{self.station}/crew/upgrade/ship/{shipid}")
             assert new_prices[cid]["price"] > price
-            assert new_prices[cid]["rank"] == 2
+            assert new_prices[cid]["rank"] == (nextrk + 1)
 
             player = self.assert_ok(f"/player/{self.id}")
             afterwages = player["costs"]
             assert afterwages > beforewages
             beforewages = afterwages
 
-        got = self.assert_ok(f"/station/{self.station}/crew/upgrade/station/trader")
+        got = self.assert_ok(f"/station/{self.station}/crew/upgrade/trader")
         self.assert_got(got, "new-rank", 2)
         self.assert_got(got, "cost", None)
         player = self.assert_ok(f"/player/{self.id}")

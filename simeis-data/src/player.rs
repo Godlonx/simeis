@@ -9,6 +9,7 @@ use crate::galaxy::{Galaxy, SpaceCoord};
 use crate::ship::module::{ShipModuleId, ShipModuleType};
 use crate::ship::upgrade::ShipUpgrade;
 use crate::ship::{Ship, ShipId};
+use crate::syslog::{SyslogEvent, SyslogRecv};
 
 const INIT_MONEY: f64 = 30000.0;
 
@@ -77,10 +78,17 @@ impl Player {
             .sum::<f64>();
     }
 
-    pub fn update_money(&mut self, tdelta: f64) {
+    pub fn update_money(&mut self, syslog: &SyslogRecv, tdelta: f64) {
+        let before = self.money < (self.costs * 60.0);
         self.money -= self.costs * tdelta;
+        let after = self.money < (self.costs * 60.0);
+        if after && !before {
+            let tleft = std::time::Duration::from_secs_f64(self.money / self.costs);
+            syslog.event(self.id, SyslogEvent::LowFunds(tleft));
+        }
         if self.money < 0.0 {
             self.lost = true;
+            // TODO (#19)  Allow to create a new game with the same name if old one lost
             // TODO (#19)  What to do with its resources, ships, etc...
         }
     }

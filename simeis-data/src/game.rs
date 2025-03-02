@@ -79,7 +79,7 @@ impl Game {
 
         for (player_id, player) in self.players.read().unwrap().iter() {
             let mut player = player.write().unwrap();
-            player.update_money(ITER_PERIOD.as_secs_f64());
+            player.update_money(syslog, ITER_PERIOD.as_secs_f64());
 
             let mut deadship = vec![];
             for (id, ship) in player.ships.iter_mut() {

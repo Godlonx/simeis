@@ -290,7 +290,7 @@ async fn get_crew_upgrades(
             cid,
             serde_json::json!({
                 "member-type": cm.member_type,
-                "rank": cm.rank,
+                "rank": cm.rank + 1,
                 "price": cm.price_next_rank(),
             }),
         );
@@ -316,7 +316,8 @@ async fn buy_crew_upgrade(
     build_response(res.map(|(p, r)| serde_json::json!({ "new-rank": r, "cost": p})))
 }
 
-#[web::get("/station/{station_id}/crew/upgrade/station/trader")]
+// TODO (#35)    Have an endpoint /station/{station_id}/crew/upgrade/{crew_id} instead
+#[web::get("/station/{station_id}/crew/upgrade/trader")]
 async fn upgrade_station_trader(
     station_id: Path<StationId>,
     srv: GameState,
@@ -608,6 +609,7 @@ async fn compute_travel_costs(
     )
 }
 
+// TODO (#35)   Stop navigation
 #[web::get("/ship/{ship_id}/navigate/{x}/{y}/{z}")]
 async fn ask_navigate(
     srv: GameState,
@@ -658,6 +660,7 @@ async fn stop_extraction(
     )
 }
 
+// MAN
 #[web::get("/ship/{ship_id}/unload/{resource}/{amount}")]
 async fn unload_ship_cargo(
     srv: GameState,
