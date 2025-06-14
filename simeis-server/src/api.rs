@@ -796,6 +796,20 @@ async fn tick_server(
     build_response(Ok(json!({})))
 }
 
+#[web::get("/resources")]
+async fn resources_info() -> impl web::Responder {
+    let mut data = BTreeMap::new();
+    for res in Resource::iter() {
+        data.insert(format!("{res:?}"), json!({
+            "base-price": res.base_price(),
+            "volume": res.volume(),
+            "difficulty": res.extraction_difficulty(),
+            "min-rank": res.min_rank(),
+        }));
+    }
+    build_response(Ok(to_value(data).unwrap()))
+}
+
 // TODO IMPORTANT    Stats of all the players in the game
 //     Total money earned
 //     Age of the player
@@ -805,6 +819,7 @@ pub fn configure(srv: &mut ServiceConfig) {
     srv.service(tick_server);
 
     srv.service(ping)
+        .service(resources_info)
         .service(get_syslogs)
         .service(hire_crew)
         .service(get_crew_upgrades)

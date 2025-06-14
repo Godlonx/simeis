@@ -532,3 +532,5 @@ Chaque transaction retourne une donnée `MarketTx` comprenant:
   - Le déchargement des resources d'un vaisseau n'est pas possible (voir @unload)
   - Il ne reste que 60 secondes avant que les frais n'épuisent les réserves d'argent
 ], none)
+
+// TODO IMPORTANT  Add the /resources endpoint

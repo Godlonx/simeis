@@ -60,10 +60,21 @@ impl Resource {
         }
     }
 
+    pub fn min_rank(&self) -> u8 {
+        match self {
+            Resource::Stone => 0,
+            Resource::Iron => 3,
+            Resource::Helium => 0,
+            Resource::Ozone => 3,
+            Resource::Fuel
+            | Resource::HullPlate => 0,
+        }
+    }
+
     pub fn mineable(&self, rank: u8) -> bool {
         match self {
-            Resource::Stone => true,
-            Resource::Iron => rank > 3,
+            Resource::Stone
+            | Resource::Iron => rank > self.min_rank(),
             _ => false,
         }
     }
