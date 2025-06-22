@@ -49,13 +49,27 @@ macro_rules! get_player {
 }
 
 macro_rules! get_station {
-    ($srv:ident, $player:ident, $id:expr) => {{
+    ($srv:expr, $player:expr, $id:expr) => {{
         let player = $player.read().await;
         let Some(station_coord) = player.stations.get($id).cloned() else {
             return build_response(Err(Errcode::NoSuchStation(*$id)));
         };
         drop(player);
-        $srv.galaxy.get_station(&station_coord).await.unwrap()
+        $srv.galaxy.read().await.get_station(&station_coord).await.unwrap()
+    }};
+
+    ($srv:expr, $id:expr; $player:expr) => {{
+        let Some(station_coord) = $player.stations.get($id).cloned() else {
+            return build_response(Err(Errcode::NoSuchStation(*$id)));
+        };
+        $srv.galaxy.read().await.get_station(&station_coord).await.unwrap()
+    }};
+
+    ($srv:expr, $id:expr; $player:expr; $galaxy:expr) => {{
+        let Some(station_coord) = $player.stations.get($id).cloned() else {
+            return build_response(Err(Errcode::NoSuchStation(*$id)));
+        };
+        $galaxy.get_station(&station_coord).await.unwrap()
     }};
 }
 
@@ -210,6 +224,7 @@ async fn get_station_status(
     let player = get_player!(srv, req);
     let station = get_station!(srv, player, id.as_ref());
     let station = station.read().await;    // OK
+
     build_response(Ok(json!({
         "id": station.id,
         "position": station.position,
@@ -229,6 +244,7 @@ async fn list_shipyard_ships(
     let player = get_player!(srv, req);
     let station = get_station!(srv, player, id.as_ref());
     let station = station.read().await;    // OK
+
     let mut ships = vec![];
     for ship in station.shipyard.iter() {
         ships.push(json!({
@@ -251,10 +267,13 @@ async fn shipyard_buy_ship(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (station_id, ship_id) = args.as_ref();
+
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let mut player = player.write().await;
+
+    let station = get_station!(srv, station_id; player);
     let mut station = station.write().await;
+
     build_response(
         player
             .buy_ship(&mut station, *ship_id)
@@ -317,13 +336,16 @@ async fn hire_crew(
         return build_response(Err(Errcode::InvalidArgument("crewtype")));
     };
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
+    let mut player = player.write().await;
+    let galaxy = srv.galaxy.read().await;
+    let station = get_station!(srv, station_id; player; galaxy);
+    let mut station = station.write().await;
 
     let mut rng = rand::rng();
     let id = rng.random();
     let member = CrewMember::from(crewtype);
-    player.write().await.update_wages(&srv.galaxy).await;
-    station.write().await.idle_crew.0.insert(id, member);
+    player.update_wages(&galaxy).await;
+    station.idle_crew.0.insert(id, member);
     build_response(Ok(serde_json::json!({ "id": id })))
 }
 
@@ -334,13 +356,17 @@ async fn get_crew_upgrades(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (station_id, ship_id) = args.as_ref();
+
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let player = player.read().await;
+
     let Some(ship) = player.ships.get(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
-    if ship.position != station.read().await.position {
+
+    let station = get_station!(srv, station_id; player);
+    let station = station.read().await;
+    if ship.position != station.position {
         return build_response(Err(Errcode::ShipNotInStation));
     }
 
@@ -365,13 +391,16 @@ async fn buy_crew_upgrade(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (station_id, ship_id, crew_id) = args.as_ref();
+
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let mut player = player.write().await;
+    let mut galaxy = srv.galaxy.write().await;
+    let station = get_station!(srv, station_id; player; galaxy);
     let station = station.read().await;
+
     let res = player.upgrade_crew_rank(&station, ship_id, crew_id);
     if res.is_ok() {
-        player.update_wages(&srv.galaxy).await;
+        player.update_wages(&mut galaxy).await;
     }
     build_response(res.map(|(p, r)| json!({ "new-rank": r, "cost": p})))
 }
@@ -384,12 +413,14 @@ async fn upgrade_station_trader(
     req: HttpRequest,
 ) -> impl web::Responder {
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id.as_ref());
     let mut player = player.write().await;
+    let galaxy = srv.galaxy.read().await;
+    let station = get_station!(srv, station_id.as_ref(); player; galaxy);
     let mut station = station.write().await;
+
     let res = player.upgrade_station_trader(station.deref_mut());
     if res.is_ok() {
-        player.update_wages(&srv.galaxy).await;
+        player.update_wages(&galaxy).await;
     }
     build_response(res.map(|(p, r)| json!({ "new-rank": r, "cost": p })))
 }
@@ -419,12 +450,13 @@ async fn assign_pilot(
 ) -> impl web::Responder {
     let (station_id, crew_id, ship_id) = args.as_ref();
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let mut player = player.write().await;
+    let station = get_station!(srv, station_id; player);
+    let mut station = station.write().await;
+
     let Some(ship) = player.ships.get_mut(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
-    let mut station = station.write().await;
     build_response(
         station
             .onboard_pilot(*crew_id, ship)
@@ -439,13 +471,16 @@ async fn assign_operator(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (station_id, crew_id, ship_id, modid) = args.as_ref();
+
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let mut player = player.write().await;
+
+    let station = get_station!(srv, station_id; player);
+    let mut station = station.write().await;
+
     let Some(ship) = player.ships.get_mut(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
-    let mut station = station.write().await;
     build_response(
         station
             .onboard_operator(*crew_id, ship, modid)
@@ -456,8 +491,12 @@ async fn assign_operator(
 #[web::get("/station/{station_id}/scan")]
 async fn scan(id: Path<StationId>, srv: GameState, req: HttpRequest) -> impl web::Responder {
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, id.as_ref());
-    let results = station.read().await.scan(&srv.galaxy).await;
+    let player = player.read().await;
+    let galaxy = srv.galaxy.read().await;
+    let station = get_station!(srv, id.as_ref(); player; galaxy);
+    let station = station.read().await;
+
+    let results = station.scan(&galaxy).await;
     build_response(Ok(to_value(&results).unwrap()))
 }
 
@@ -468,7 +507,7 @@ async fn get_prices_ship_module(
     req: HttpRequest,
 ) -> impl web::Responder {
     let player = get_player!(srv, req);
-    let _station = get_station!(srv, player, id.as_ref());
+    let _station = get_station!(srv, player, id.as_ref());    // Ensure it exists
     // TODO (#22) Price based on station
     let mut res: BTreeMap<ShipModuleType, f64> = BTreeMap::new();
     for smod in ShipModuleType::iter() {
@@ -509,13 +548,18 @@ async fn get_ship_module_upgrade_prices(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (station_id, ship_id) = args.as_ref();
+
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let player = player.read().await;
+
     let Some(ship) = player.ships.get(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
-    if ship.position != station.read().await.position {
+
+    let station = get_station!(srv, station_id; player);
+    let station = station.read().await;
+
+    if ship.position != station.position {
         return build_response(Err(Errcode::ShipNotInStation));
     }
 
@@ -539,10 +583,13 @@ async fn buy_ship_module_upgrade(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (station_id, ship_id, mod_id) = args.as_ref();
+
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let mut player = player.write().await;
+
+    let station = get_station!(srv, station_id; player);
     let station = station.read().await;
+
     build_response(
         player
             .buy_ship_module_upgrade(&station, ship_id, mod_id)
@@ -562,11 +609,13 @@ async fn buy_station_cargo(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (id, amnt) = args.as_ref();
-    let player = get_player!(srv, req);
-    let station = get_station!(srv, player, id);
 
+    let player = get_player!(srv, req);
     let mut player = player.write().await;
+
+    let station = get_station!(srv, id; player);
     let mut station = station.write().await;
+
     build_response(
         station
             .buy_cargo(player.deref_mut(), amnt)
@@ -580,14 +629,17 @@ async fn get_station_upgrades(
     id: Path<StationId>,
     req: HttpRequest,
 ) -> impl web::Responder {
+
     let player = get_player!(srv, req);
     let station = get_station!(srv, player, id.as_ref());
     let station = station.read().await;
+
     let cargoprice = station.cargo_price();
     let traderprice = station.trader.map(|trader| {
         let cm = station.crew.0.get(&trader).unwrap();
         cm.price_next_rank()
     });
+
     build_response(Ok(json!({
         "cargo-expansion": cargoprice,
         "trader-upgrade": traderprice,
@@ -601,10 +653,13 @@ async fn refuel_ship(
     req: HttpRequest,
 ) -> impl web::Responder {
     let (station_id, ship_id) = args.as_ref();
+
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
-    let mut station = station.write().await;
     let mut player = player.write().await;
+
+    let station = get_station!(srv, station_id; player);
+    let mut station = station.write().await;
+
     let Some(ship) = player.ships.get_mut(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
@@ -621,9 +676,11 @@ async fn repair_ship(
 ) -> impl web::Responder {
     let (station_id, ship_id) = args.as_ref();
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
-    let mut station = station.write().await;
     let mut player = player.write().await;
+
+    let station = get_station!(srv, station_id; player);
+    let mut station = station.write().await;
+
     let Some(ship) = player.ships.get_mut(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
@@ -708,8 +765,9 @@ async fn start_extraction(
     let Some(ship) = player.ships.get_mut(id.as_ref()) else {
         return build_response(Err(Errcode::ShipNotFound(*id)));
     };
+    let galaxy = srv.galaxy.read().await;
     build_response(
-        ship.start_extraction(&srv.galaxy).await.map(|v| to_value(v).unwrap())
+        ship.start_extraction(&galaxy).await.map(|v| to_value(v).unwrap())
     )
 }
 
@@ -753,8 +811,9 @@ async fn unload_ship_cargo(
         return build_response(Err(Errcode::ShipNotInStation));
     };
 
-    let station = srv.galaxy.get_station(station.1).await.unwrap();
+    let station = get_station!(srv, station.0; player);
     let mut station = station.write().await;
+
     let pid = player.id;
     let ship = player.ships.get_mut(id).unwrap();
     let res = ship.unload_cargo(&resource, *amnt, station.deref_mut());
@@ -788,9 +847,11 @@ async fn buy_resource(
         return build_response(Err(Errcode::InvalidArgument("resource")));
     };
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let mut player = player.write().await;
+
+    let station = get_station!(srv, station_id; player);
     let mut station = station.write().await;
+
     let mut market = srv.market.write().await;
     build_response(
         station
@@ -810,9 +871,11 @@ async fn sell_resource(
         return build_response(Err(Errcode::InvalidArgument("resource")));
     };
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
     let mut player = player.write().await;
+
+    let station = get_station!(srv, station_id; player);
     let mut station = station.write().await;
+
     let mut market = srv.market.write().await;
     let res = station
             .sell_resource(&resource, *amnt, player.deref_mut(), market.deref_mut())
@@ -829,11 +892,14 @@ async fn get_fee_rate(
     let player = get_player!(srv, req);
     let station = get_station!(srv, player, station_id.as_ref());
     let station = station.read().await;
+
     let Some(trader) = station.trader else {
         return build_response(Err(Errcode::NoTraderAssigned));
     };
+
     let cm = station.crew.0.get(&trader).unwrap();
     let fee = fee_rate(cm.rank);
+
     build_response(Ok(json!({
         "fee_rate": fee,
     })))
@@ -875,13 +941,17 @@ async fn resources_info() -> impl web::Responder {
 #[web::get("/gamestats")]
 async fn gamestats(srv: GameState) -> impl web::Responder {
     let mut data = BTreeMap::new();
-    let players = srv.players.read().await;
-    for (id, player) in players.iter() {
-        let p = player.read().await;
+    let all_players = srv.players.read().await;
+    let mut players = all_players.keys().cloned().collect::<Vec<PlayerId>>();
+    players.sort(); // Should not be needed as iteration is sorted by default in BTreeMap
+    let galaxy = srv.galaxy.read().await;
+
+    for id in players {
+        let p = all_players.get(&id).unwrap().read().await;
         let potential = {
             let mut s = 0.0;
             for (_, coord) in p.stations.iter() {
-                let sta = srv.galaxy.get_station(coord).await.unwrap();
+                let sta = galaxy.get_station(coord).await.unwrap();
                 let station = sta.read().await;
                 s += station.cargo.resources
                     .iter()
@@ -890,6 +960,7 @@ async fn gamestats(srv: GameState) -> impl web::Responder {
             }
             s
         };
+
         data.insert(id, json!({
             "name": p.name,
             "score": p.score,

@@ -70,7 +70,6 @@ impl Player {
     pub async fn update_wages(&mut self, galaxy: &Galaxy) {
         self.costs = 0.0;
         let mut stations = vec![];
-        // Galaxy read first
         for coord in self.stations.values() {
             stations.push(galaxy.get_station(coord).await.unwrap());
         }

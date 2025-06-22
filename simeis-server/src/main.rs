@@ -38,7 +38,7 @@ async fn main() -> std::io::Result<()> {
     //         ends, as well as other endpoints with high locks dependencies
     // With multiple workers but without the "watch_game" script, works OK
     // With 1 worker only, works like a charm
-    // .workers(200)
+    .workers(2)
     .run()
     .await;
 
