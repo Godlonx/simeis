@@ -79,6 +79,7 @@ impl Market {
         assert!(price > 0.0);
         let cost = amnt * price;
         let fees = cost * fee_rate;
+        // TODO In case cargo is reaaaaaaaaaally big, it could make the price < 0 and trigger a bad assert
         let price_inc_max = (cost / PRICE_INC_DIV) * PRICE_INC_RANGE_MAX;
         let price_inc_min = price_inc_max * PRICE_INC_MIN_RATIO;
         let mut rng = rand::rng();
