@@ -4,3 +4,4 @@ result
 *.pdf
 *.zip
 .~lock.*.ods#
+scores.json
