@@ -107,7 +107,7 @@ for (res, data) in resources.items():
     MAX[res] = data["base-price"]
 
 while True:
-    time.sleep(2)
+    time.sleep(0.5)
     buffer = disp_market(resources)
     buffer += "\n"
     info = get_info()
@@ -120,6 +120,7 @@ while True:
     for (_, p) in info.items():
         if p["lost"]:
             p["score"] = -1.0
+            p["potential"] = -1.0
 
     buffer += "{} Players still in the game\n".format(len([True for p in info.values() if not p["lost"]]))
     players = sorted(info.items(), key=lambda p: p[1]["score"] + p[1]["potential"], reverse=True)[:NMAX]
