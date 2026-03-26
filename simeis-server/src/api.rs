@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::ops::{Deref, DerefMut};
+use std::ops::DerefMut;
 use std::str::FromStr;
 use std::time::Instant;
 
@@ -298,9 +298,10 @@ async fn shipyard_list_upgrades(
     let (station_id, ship_id) = args.as_ref();
     let player = get_player!(srv, req);
     let station = get_station!(srv, player, station_id);
+    let player = player.read().await;
     let station = station.read().await;
 
-    let Some(ship) = player.ships.get(ship_id.as_ref()) else {
+    let Some(ship) = player.ships.get(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
 
@@ -1048,8 +1049,8 @@ pub fn configure(srv: &mut ServiceConfig) {
         .service(get_syslogs)
         .service(hire_crew)
         .service(get_crew_upgrades)
-        .service(buy_crew_upgrade)
-        .service(upgrade_station_trader)
+        .service(upgrade_ship_crew)
+        .service(upgrade_station_crew)
         .service(assign_pilot)
         .service(assign_operator)
         .service(assign_trader)

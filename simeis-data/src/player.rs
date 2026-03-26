@@ -173,7 +173,7 @@ impl Player {
             return Err(Errcode::ShipNotFound(*ship_id));
         };
 
-        let price = station.get_ship_upgrade_price(&ship, upgrade);
+        let price = station.get_ship_upgrade_price(ship, upgrade);
         if price > self.money {
             return Err(Errcode::NotEnoughMoney(self.money, price));
         }
