@@ -13,10 +13,11 @@ const BASE_FEE_RATE: f64 = 26.0 / 100.0;
 const FEE_RATE_DEC_POWF: f64 = 1.15;
 const UPD_PRICE_PROBA: f64 = 0.80;
 
-// Buying 400000 worth of a resource will increase the price between 15% and 30%
-const PRICE_INC_DIV: f64 = 400_000.0;
-const PRICE_INC_RANGE_MAX: f64 = 30.0 / 100.0;
-const PRICE_INC_MIN_RATIO: f64 = 50.0 / 100.0;
+// Buying 500000 worth of a resource will increase the price between 10% and 30%
+// After  500000 credits, will be capped at btwn 10 and 30%
+const PRICE_INC_CAP: f64 = 500_000.0;
+const PRICE_INC_RANGE_MAX: f64 = 70.0 / 100.0;
+const PRICE_INC_RANGE_MIN: f64 = 30.0 / 100.0;
 
 #[inline]
 pub fn fee_rate(rank: u8) -> f64 {
@@ -79,8 +80,8 @@ impl Market {
         assert!(price > 0.0);
         let cost = amnt * price;
         let fees = cost * fee_rate;
-        let price_inc_max = (cost / PRICE_INC_DIV) * PRICE_INC_RANGE_MAX;
-        let price_inc_min = price_inc_max * PRICE_INC_MIN_RATIO;
+        let price_inc_max = (cost / PRICE_INC_CAP).max(1.0) * PRICE_INC_RANGE_MAX;
+        let price_inc_min = (cost / PRICE_INC_CAP).max(1.0) * PRICE_INC_RANGE_MIN;
         let mut rng = rand::rng();
         let inc = rng.random_range(price_inc_min..=price_inc_max);
         *self.prices.get_mut(r).unwrap() *= 1.0 + inc;
@@ -102,9 +103,8 @@ impl Market {
         let cost = amnt * price;
         let fees = cost * fee_rate;
 
-        // TODO In case cargo is reaaaaaaaaaally big, it could make the price < 0 and trigger a bad assert
-        let price_dec_max = (cost / PRICE_INC_DIV) * PRICE_INC_RANGE_MAX;
-        let price_dec_min = price_dec_max * PRICE_INC_MIN_RATIO;
+        let price_dec_max = (cost / PRICE_INC_CAP).max(1.0) * PRICE_INC_RANGE_MAX;
+        let price_dec_min = (cost / PRICE_INC_CAP).max(1.0) * PRICE_INC_RANGE_MIN;
         let mut rng = rand::rng();
         let dec = rng.random_range(price_dec_min..=price_dec_max);
         *self.prices.get_mut(r).unwrap() *= 1.0 - dec;
