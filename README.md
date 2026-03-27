@@ -21,3 +21,12 @@ Jeu par API
   - Un adversaire ne peut pas savoir où il attérit
   - Peut être attaqué par un adversaire
 - Permet à un joueur d'attaquer d'autres adversaires
+
+(From closed issue #1)
+- Endpoints with "admin api key":
+    Reset the game
+    Get details about any player
+    Remove a player
+- Web UI to track players progression throughout the game (with admin API key)
+- Add more planet diversity and mixed planets
+- Add crafting materials (gaz becomes fuel, iron becomes hull)

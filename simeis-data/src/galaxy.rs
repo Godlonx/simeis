@@ -32,7 +32,7 @@ pub enum SpaceObject {
 
 pub struct Galaxy {
     objects: BTreeMap<SpaceCoord, SpaceObject>,
-    discovered: Vec<GalaxySector>, // TODO BTreeMap instead ?
+    discovered: Vec<GalaxySector>,    // TODO (#6) Index by sector ID in a BTreeMap
 }
 
 impl Galaxy {
@@ -132,7 +132,7 @@ impl Galaxy {
         Some(planet.clone())
     }
 
-    // TODO (#11) Generate based on the galaxy
+    // TODO (#6) Generate based on the galaxy
     pub async fn init_new_station(&mut self) -> (StationId, SpaceCoord) {
         let mut rng = rand::rng();
 
@@ -235,7 +235,7 @@ pub fn get_direction(a: &SpaceCoord, b: &SpaceCoord) -> (f64, f64, f64) {
     (delta.0 / distance, delta.1 / distance, delta.2 / distance)
 }
 
-// TODO (#33)   Unit tests on this one
+// TODO (#6)   Unit tests on this one
 fn compute_sector(x: SpaceUnit, y: SpaceUnit, z: SpaceUnit) -> GalaxySector {
     let start_x = x - (x % SECTOR_SIZE.0);
     let end_x = start_x.saturating_add(SECTOR_SIZE.0);
@@ -263,7 +263,6 @@ fn is_in_sector(coord: &SpaceCoord, sector: &GalaxySector) -> bool {
         && coord.2 < sector.2 .1
 }
 
-// TODO (#27)    Make this scan use a sphere from the center point
 fn sectors_around(center: &SpaceCoord, radius: f64) -> Vec<GalaxySector> {
     let mut sectors = vec![];
     let centersec = compute_sector(center.0, center.1, center.2);

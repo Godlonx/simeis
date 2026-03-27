@@ -20,7 +20,7 @@ use crate::syslog::{SyslogEvent, SyslogFifo, SyslogRecv, SyslogSend};
 
 const ITER_PERIOD: Duration = Duration::from_millis(20);
 
-// TODO (#23) Have a global "inflation" rate for all users, that increases over time
+// TODO (#9) Have a global "inflation" rate for all users, that increases over time
 //     Equipment becomes more and more expansive
 
 pub enum GameSignal {
@@ -60,7 +60,6 @@ impl Game {
         };
 
         let thread_data = data.clone();
-        // TODO Reduce stack size of this task
         let thread = tokio::spawn(async move { thread_data.start(recv_stop, sysrecv).await });
         (thread, data)
     }

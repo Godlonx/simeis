@@ -131,7 +131,7 @@ impl Ship {
         }
     }
 
-    // TODO (#22) Create a new ship with random specs, with specs between +/- 20% base price
+    // TODO (#9) Create a new ship with random specs, with specs between +/- 20% base price
     //     Change it every X minutes
     //     Used by traders to seek nice ships to buy
 
@@ -352,9 +352,9 @@ fn test_ship_flight() {
                     || (costs.hull_usage > ship.hull_decay_capacity)
             );
         }
-        // TODO Check hull
-        // TODO Check fuel
-        // TODO Check arrived
-        // TODO Check distance
+        // TODO (#13) Check hull
+        // TODO (#13) Check fuel
+        // TODO (#13) Check arrived
+        // TODO (#13) Check distance
     });
 }

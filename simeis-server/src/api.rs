@@ -26,10 +26,10 @@ use simeis_data::errors::Errcode;
 
 use crate::GameState;
 
-// TODO Use POST queries also, instead of everything with GET
+// TODO (#14) Use POST queries also, instead of everything with GET
 
-// TODO (#35) Use query parameters (with ntex::web::types::Query) instead of plain URLs
-// TODO Pass player key in HTTP headers
+// TODO (#14) Use query parameters (with ntex::web::types::Query) instead of plain URLs
+// TODO (#14) Pass player key in HTTP headers
 
 macro_rules! get_player {
     ($srv:ident, $req:ident) => {{
@@ -736,7 +736,7 @@ async fn repair_ship(
     build_response(res)
 }
 
-// TODO FIXME Sometimes under heavy load, sometimes get a "Ship not found"
+// FIXME Sometimes under heavy load, sometimes get a "Ship not found"
 // Get the status of a specific ship
 #[web::get("/ship/{ship_id}")]
 async fn get_ship_status(

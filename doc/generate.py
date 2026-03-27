@@ -1,6 +1,7 @@
 #-*-encoding:utf-8*-
 
 ALL_METHODS = ["get", "post"]
+IGNORED_LINES =[("TO" + "DO"), "FIXME"]
 
 import os
 import json
@@ -15,7 +16,7 @@ method = None
 comments = []
 for line in code:
     if line.startswith("//"):
-        if "TODO" in line:
+        if any(s in line for s in IGNORED_LINES):
             continue
         comments.append(line[2:].strip())
     elif any([f"web::{method}" in line for method in ALL_METHODS]):
