@@ -4,18 +4,16 @@ use std::str::FromStr;
 use std::time::Instant;
 
 use base64::{prelude::BASE64_STANDARD, Engine};
-use rand::RngExt;
 use serde_json::{json, to_value, Value};
 use strum::IntoEnumIterator;
 
 use actix_web::web::{Path, ServiceConfig};
 use actix_web::{self, get, HttpRequest, HttpResponse, Responder};
 
-use simeis_data::crew::{CrewId, CrewMember, CrewMemberType};
+use simeis_data::crew::{CrewId, CrewMemberType};
 use simeis_data::errors::Errcode;
 use simeis_data::galaxy::station::StationId;
 use simeis_data::galaxy::SpaceUnit;
-use simeis_data::market::fee_rate;
 use simeis_data::player::{PlayerId, PlayerKey};
 use simeis_data::ship::module::{ShipModuleId, ShipModuleType};
 use simeis_data::ship::resources::Resource;
@@ -236,17 +234,10 @@ async fn get_station_status(
     req: HttpRequest,
 ) -> impl Responder {
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, id.as_ref());
+    let player = player.read().await;
+    let station = get_station!(srv, id.as_ref(); player);
     let station = station.read().await;
-
-    build_response(Ok(json!({
-        "id": station.id,
-        "position": station.position,
-        "crew": station.crew,
-        "cargo": station.cargo,
-        "idle_crew": station.idle_crew,
-        "trader": station.trader,
-    })))
+    build_response(Ok(station.to_json(&player.id).await))
 }
 
 // List all the ships available for buying
@@ -368,14 +359,9 @@ async fn hire_crew(
     let mut player = player.write().await;
     let galaxy = srv.galaxy.read().await;
     let station = get_station!(srv, station_id; player; galaxy);
-    let mut station = station.write().await;
-
-    let mut rng = rand::rng();
-    let id = rng.random();
-    let member = CrewMember::from(crewtype);
-    station.idle_crew.0.insert(id, member);
-    drop(station);
-    player.update_wages(&galaxy).await;
+    let station = station.read().await;
+    let id = station.hire_crew(&player.id, crewtype).await;
+    player.update_costs(&galaxy).await;
     build_response(Ok(serde_json::json!({ "id": id })))
 }
 
@@ -433,7 +419,7 @@ async fn upgrade_ship_crew(
     let res = player.upgrade_ship_crew(&station, ship_id, crew_id);
     if res.is_ok() {
         drop(station);
-        player.update_wages(&galaxy).await;
+        player.update_costs(&galaxy).await;
     }
     build_response(res.map(|(p, r)| json!({ "new-rank": r, "cost": p})))
 }
@@ -452,10 +438,10 @@ async fn upgrade_station_crew(
     let station = get_station!(srv, station_id; player; galaxy);
     let mut station = station.write().await;
 
-    let res = player.upgrade_station_crew(station.deref_mut(), crew_id);
+    let res = player.upgrade_station_crew(station.deref_mut(), crew_id).await;
     if res.is_ok() {
         drop(station);
-        player.update_wages(&galaxy).await;
+        player.update_costs(&galaxy).await;
     }
     build_response(res.map(|(p, r)| json!({ "new-rank": r, "cost": p })))
 }
@@ -471,10 +457,12 @@ async fn assign_trader(
     let (station_id, crew_id) = args.as_ref();
 
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id);
+    let player = player.read().await;
+    let station = get_station!(srv, station_id; player);
     let mut station = station.write().await;
 
-    build_response(station.assign_trader(*crew_id).map(|_| json!({})))
+    let res = station.assign_trader(&player.id, *crew_id).await;
+    build_response(res.map(|_| json!({})))
 }
 
 // Assign a crew member as a pilot on a ship. The level of the pilot will affect the speed of the ship, as well as it's fuel consumption
@@ -495,7 +483,8 @@ async fn assign_pilot(
     let Some(ship) = player.ships.get_mut(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
-    build_response(station.onboard_pilot(*crew_id, ship).map(|_| json!({})))
+    let res = station.onboard_pilot(*crew_id, ship).await;
+    build_response(res.map(|_| json!({})))
 }
 
 // Assign a crew member as an operator on a ship. The level of the crew member will affect the extraction rate of the resources
@@ -516,11 +505,8 @@ async fn assign_operator(
     let Some(ship) = player.ships.get_mut(ship_id) else {
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
-    build_response(
-        station
-            .onboard_operator(*crew_id, ship, modid)
-            .map(|_| json!({})),
-    )
+    let res = station.onboard_operator(*crew_id, ship, modid).await;
+    build_response(res.map(|_| json!({})))
 }
 
 // Scan for planets around the station
@@ -663,11 +649,8 @@ async fn buy_station_cargo(
     let station = get_station!(srv, id; player);
     let mut station = station.write().await;
 
-    build_response(
-        station
-            .buy_cargo(player.deref_mut(), amnt)
-            .map(|v| to_value(v).unwrap()),
-    )
+    let res = station.buy_cargo(player.deref_mut(), amnt).await;
+    build_response(res.map(|v| to_value(v).unwrap()))
 }
 
 // List the upgrades for a station currently available
@@ -678,15 +661,12 @@ async fn get_station_upgrades(
     req: HttpRequest,
 ) -> impl Responder {
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, id.as_ref());
+    let player = player.read().await;
+    let station = get_station!(srv, id.as_ref(); player);
     let station = station.read().await;
 
-    let cargoprice = station.cargo_price();
-    let traderprice = station.trader.map(|trader| {
-        let cm = station.crew.0.get(&trader).unwrap();
-        cm.price_next_rank()
-    });
-
+    let cargoprice = station.cargo_price(&player.id).await;
+    let traderprice = station.upgr_trader_price(&player.id).await;
     build_response(Ok(json!({
         "cargo-expansion": cargoprice,
         "trader-upgrade": traderprice,
@@ -712,8 +692,8 @@ async fn refuel_ship(
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
 
-    let res = station.refuel_ship(ship).map(|v| json!({"added-fuel": v}));
-    build_response(res)
+    let res = station.refuel_ship(ship).await;
+    build_response(res.map(|v| json!({"added-fuel": v})))
 }
 
 // Use the hull plates in storage on the station to repair the ship
@@ -734,8 +714,8 @@ async fn repair_ship(
         return build_response(Err(Errcode::ShipNotFound(*ship_id)));
     };
 
-    let res = station.repair_ship(ship).map(|v| json!({"added-hull": v}));
-    build_response(res)
+    let res = station.repair_ship(ship).await;
+    build_response(res.map(|v| json!({"added-hull": v})))
 }
 
 // FIXME Sometimes under heavy load, sometimes get a "Ship not found"
@@ -865,14 +845,14 @@ async fn unload_ship_cargo(
 
     let pid = player.id;
     let ship = player.ships.get_mut(id).unwrap();
-    let res = ship.unload_cargo(&resource, *amnt, station.deref_mut());
+    let res = ship.unload_cargo(&resource, *amnt, station.deref_mut()).await;
 
     if let Ok(0.0) = res {
         srv.syslog
             .event(
                 &pid,
                 SyslogEvent::UnloadedNothing {
-                    station_cargo: station.cargo.clone(),
+                    station_cargo: station.clone_cargo(&pid).await,
                     ship_cargo: ship.cargo.clone(),
                 },
             )
@@ -908,11 +888,10 @@ async fn buy_resource(
     let mut station = station.write().await;
 
     let mut market = srv.market.write().await;
-    build_response(
-        station
-            .buy_resource(&resource, *amnt, player.deref_mut(), market.deref_mut())
-            .map(|tx| to_value(tx).unwrap()),
-    )
+    let res = station
+        .buy_resource(&resource, *amnt, player.deref_mut(), market.deref_mut())
+        .await;
+    build_response(res.map(|tx| to_value(tx).unwrap()))
 }
 
 // Sell a specific resource on the market
@@ -936,8 +915,8 @@ async fn sell_resource(
     let mut market = srv.market.write().await;
     let res = station
         .sell_resource(&resource, *amnt, player.deref_mut(), market.deref_mut())
-        .map(|tx| to_value(tx).unwrap());
-    build_response(res)
+        .await;
+    build_response(res.map(|tx| to_value(tx).unwrap()))
 }
 
 // Get the fee rate applied on the market of a station, depends on the level of the trader
@@ -948,19 +927,11 @@ async fn get_fee_rate(
     req: HttpRequest,
 ) -> impl Responder {
     let player = get_player!(srv, req);
-    let station = get_station!(srv, player, station_id.as_ref());
+    let player = player.read().await;
+    let station = get_station!(srv, station_id.as_ref(); player);
     let station = station.read().await;
-
-    let Some(trader) = station.trader else {
-        return build_response(Err(Errcode::NoTraderAssigned));
-    };
-
-    let cm = station.crew.0.get(&trader).unwrap();
-    let fee = fee_rate(cm.rank);
-
-    build_response(Ok(json!({
-        "fee_rate": fee,
-    })))
+    let fee = station.get_fee_rate(&player.id).await;
+    build_response(fee.map(|rate| json!({ "fee_rate": rate })))
 }
 
 #[cfg(feature = "testing")]
@@ -1032,12 +1003,7 @@ async fn gamestats(srv: GameState) -> impl Responder {
             for (_, coord) in p.stations.iter() {
                 let sta = galaxy.get_station(coord).await.unwrap();
                 let station = sta.read().await;
-                s += station
-                    .cargo
-                    .resources
-                    .iter()
-                    .map(|(r, amnt)| r.base_price() * amnt)
-                    .sum::<f64>();
+                s += station.get_cargo_potential_price(&id).await;
             }
             s
         };

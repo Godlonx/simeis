@@ -6,6 +6,7 @@ use crate::crew::{Crew, CrewId, CrewMemberType};
 use crate::errors::Errcode;
 use crate::galaxy::station::Station;
 use crate::galaxy::{translation, Galaxy, SpaceCoord};
+use crate::player::PlayerId;
 
 pub mod cargo;
 pub mod module;
@@ -50,6 +51,8 @@ pub struct Ship {
     pub modules: BTreeMap<ShipModuleId, ShipModule>,
     pub shield_power: u16,
 
+    #[serde(default)]
+    pub owner: PlayerId,
     #[serde(default)]
     pub position: SpaceCoord,
     #[serde(default)]
@@ -284,7 +287,7 @@ impl Ship {
         rates.update_cargo(&mut self.cargo, tdelta)
     }
 
-    pub fn unload_cargo(
+    pub async fn unload_cargo(
         &mut self,
         resource: &Resource,
         amnt: f64,
@@ -295,7 +298,7 @@ impl Ship {
             return Ok(0.0);
         }
 
-        let added = station.cargo.add_resource(resource, unloaded);
+        let added = station.add_resource(&self.owner, resource, unloaded).await;
         if added < unloaded {
             self.cargo.add_resource(resource, unloaded - added);
             Ok(added)

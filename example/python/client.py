@@ -2,8 +2,8 @@ import sys
 from sdk import SimeisSDK
 
 class Game:
-    def __init__(self, username):
-        self.sdk = SimeisSDK(username, "0.0.0.0", 8080)
+    def __init__(self, username, ip, port):
+        self.sdk = SimeisSDK(username, ip, port)
 
     def gameloop(self):
         status = self.sdk.get_player_status()
@@ -17,7 +17,10 @@ class Game:
         if len(status["ships"]) == 0:
             # Acheter un vaisseau
             print("Buying first ship")
-            ship = self.sdk.shop_list_ship(sta)[0]
+            all_ships = self.sdk.shop_list_ship(sta)
+            for s in all_ships:
+                print(s)
+            ship = all_ships[0]
             self.sdk.buy_ship(sta, ship["id"])
 
             # En fonction de la planète, on achète un module de minage différent
@@ -103,6 +106,12 @@ class Game:
             print("")
 
 if __name__ == "__main__":
+    if len(sys.argv[1:]) < 3:
+        print("Usage: python3.py ./client.py <username> <IP> <port>")
+        sys.exit(1)
+
     name = sys.argv[1]
-    game = Game(name)
+    ip = sys.argv[2]
+    port = int(sys.argv[3])
+    game = Game(name, ip, port)
     game.gameloop()

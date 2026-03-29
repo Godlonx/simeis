@@ -1,7 +1,7 @@
 #![allow(unexpected_cfgs)]
-use actix_web::middleware::Logger;
+use actix_web::{middleware::Logger, web::Data};
 
-use simeis_data::game::Game;
+use simeis_data::game::{Game, GameSignal};
 
 mod api;
 
@@ -24,21 +24,22 @@ async fn main() -> std::io::Result<()> {
         .init();
 
     log::info!("Running on http://0.0.0.0:{port}");
-    let (gamethread, state) = Game::init();
-    let game = state.clone();
+    let (gamethread, state) = Game::init().await;
+    let game_state = Data::new(state.clone());
 
     let res = actix_web::HttpServer::new(move || {
         actix_web::App::new()
             .wrap(Logger::default())
-            .app_data(state.clone())
+            .app_data(game_state.clone())
             .configure(api::configure)
     })
-    // .stop_runtime()
     .bind(("0.0.0.0", port))?
     .run()
     .await;
 
-    game.stop(gamethread).await;
+    log::info!("Server stopped, stopping game thread");
+    state.send_sig.send(GameSignal::Stop).await.unwrap();
+    gamethread.await.unwrap();
     res
 }
 

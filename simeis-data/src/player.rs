@@ -69,7 +69,7 @@ impl Player {
     }
 
     // SAFETY Will deadlock if a &mut station exists when this is called
-    pub async fn update_wages(&mut self, galaxy: &Galaxy) {
+    pub async fn update_costs(&mut self, galaxy: &Galaxy) {
         self.costs = 0.0;
         let mut stations = vec![];
         for coord in self.stations.values() {
@@ -79,8 +79,7 @@ impl Player {
         for station in stations {
             // Deadlock because of this
             let station = station.read().await;
-            self.costs += station.crew.sum_wages();
-            self.costs += station.idle_crew.sum_wages();
+            self.costs += station.sum_all_wages(&self.id).await;
         }
         self.costs += self
             .ships
@@ -124,15 +123,11 @@ impl Player {
             return Err(Errcode::NotEnoughMoney(self.money, price));
         }
 
-        let mut ship = station.shipyard.remove(index);
+        let mut ship = station.buy_ship(index);
         let ship_id = ship.id;
-        ship.update_perf_stats();
-        ship.fuel_tank = ship.fuel_tank_capacity;
+        ship.owner = self.id;
         self.money -= price;
         self.ships.insert(id, ship);
-
-        let pos = station.position;
-        station.shipyard.push(Ship::random(pos));
         Ok(ship_id)
     }
 
@@ -240,20 +235,11 @@ impl Player {
         Ok(res)
     }
 
-    pub fn upgrade_station_crew(
+    pub async fn upgrade_station_crew(
         &mut self,
         station: &mut Station,
         crew_id: &CrewId,
     ) -> Result<(f64, u8), Errcode> {
-        let Some(cm) = station.crew.0.get_mut(crew_id) else {
-            return Err(Errcode::CrewMemberNotFound(*crew_id));
-        };
-        let price = cm.price_next_rank();
-        if price > self.money {
-            return Err(Errcode::NotEnoughMoney(self.money, price));
-        }
-        self.money -= price;
-        cm.rank += 1;
-        Ok((price, cm.rank))
+        station.upgrade_station_crew(&self.id, &mut self.money, crew_id).await
     }
 }

@@ -9,7 +9,7 @@ use crate::{crew::CrewMember, ship::resources::Resource};
 const MAX_AVG_AMPL: f64 = 5.5 / 100.0;
 const STD_DIV: f64 = 1.15;
 pub const MARKET_CHANGE_SEC: f64 = 20.0;
-const BASE_FEE_RATE: f64 = 25.0 / 100.0;
+pub const BASE_FEE_RATE: f64 = 25.0 / 100.0;
 const FEE_RATE_DEC_POWF: f64 = 1.15;
 const UPD_PRICE_PROBA: f64 = 0.80;
 
@@ -67,7 +67,7 @@ impl Market {
 
         for (r, price) in new_prices {
             let p = self.prices.get_mut(&r).unwrap();
-            log::debug!("{r:?} {price} ({:?}%)", (price / r.base_price()) * 100.0);
+            log::trace!("{r:?} {price} ({:?}%)", (price / r.base_price()) * 100.0);
             *p = price;
         }
     }

@@ -13,7 +13,8 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::{Rng, RngExt};
 
 use crate::errors::Errcode;
-use crate::galaxy::Galaxy;
+use crate::galaxy::station::StationId;
+use crate::galaxy::{Galaxy, SpaceCoord};
 use crate::market::{Market, MARKET_CHANGE_SEC};
 use crate::player::{Player, PlayerId, PlayerKey};
 use crate::ship::ShipState;
@@ -39,25 +40,29 @@ pub struct Game {
     pub fifo_events: SyslogFifo,
     pub tstart: f64,
     pub send_sig: Sender<GameSignal>,
+    pub init_station: (StationId, SpaceCoord),
 }
 
 impl Game {
-    pub fn init() -> (JoinHandle<()>, Game) {
+    pub async fn init() -> (JoinHandle<()>, Game) {
         let (send_stop, recv_stop) = tokio::sync::mpsc::channel(5);
         let (syssend, sysrecv) = SyslogSend::channel();
         let tstart = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs_f64();
+        let mut galaxy = Galaxy::init();
+        let init_station = galaxy.init_new_station().await;
         let data = Game {
             send_sig: send_stop,
-            galaxy: Arc::new(RwLock::new(Galaxy::init())),
+            galaxy: Arc::new(RwLock::new(galaxy)),
             market: Arc::new(RwLock::new(Market::init())),
             players: Arc::new(RwLock::new(BTreeMap::new())),
             player_index: Arc::new(RwLock::new(HashMap::new())),
             syslog: syssend.clone(),
             fifo_events: sysrecv.fifo.clone(),
             tstart,
+            init_station,
         };
 
         let thread_data = data.clone();
@@ -172,10 +177,8 @@ impl Game {
     pub async fn new_player(&self, name: String) -> Result<(PlayerId, String), Errcode> {
         let mut index = self.player_index.write().await;
         let mut players = self.players.write().await;
-        let mut galaxy = self.galaxy.write().await;
-        let station = galaxy.init_new_station().await;
 
-        let player = Player::new(station, name);
+        let player = Player::new(self.init_station, name);
         let pid = player.id;
         let key = BASE64_STANDARD.encode(player.key);
 
