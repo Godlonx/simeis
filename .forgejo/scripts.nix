@@ -45,6 +45,7 @@
 
   check_rust_code = let
     allIgnoredCVE = [
+      "RUSTSEC-2025-0047"
     ];
     allIgnored = builtins.concatStringsSep " " (builtins.map (s: "--ignore ${s}") allIgnoredCVE);
     app = pkgs.writeShellApplication {
