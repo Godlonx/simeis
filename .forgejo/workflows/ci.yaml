@@ -62,3 +62,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: "Check for unadressed TODOs"
         run: nix run .#check_todos
+
+  # TODO Workflow to test if the robots can still play for X minutes without losing
+  #   Or getting a timeout because of a deadlock
+  #   Compile the server with a "extraspeed" feature to make it quicker
+  #   Make X players play together
+  # robots-viable:
