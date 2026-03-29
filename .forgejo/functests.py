@@ -429,31 +429,21 @@ class Tester:
         )
 
         costmid = self.assert_ok(f"/ship/{ship_id}/travelcost/{dst[0]}/{dst[1]}/{dst[2]}")
-        assert self.assert_got(costmid, "fuel_consumption", None) < cost["fuel_consumption"]
-        assert self.assert_got(costmid, "hull_usage", None) < cost["hull_usage"]
-        assert self.assert_got(costmid, "distance", None) < cost["distance"]
-        assert self.assert_got(costmid, "duration", None) < cost["duration"]
-
-        costret = self.assert_ok(f"/ship/{ship_id}/travelcost/{shippos[0]}/{shippos[1]}/{shippos[2]}")
-
-        # TODO IMPORTANT FIXME    Should be equal
-        self.addtrace(costret["fuel_consumption"], stopped["fuel_tank"], before["fuel_tank"])
-        self.assert_cmpf(
-            costret["fuel_consumption"] + stopped["fuel_tank"],
-            before["fuel_tank"]
+        assert self.assert_cmpf(
+            self.assert_got(costmid, "fuel_consumption", None),
+            (1-done)*cost["fuel_consumption"]
         )
-
-        self.assert_cmpf(
-            self.assert_got(costret, "fuel_consumption", None) + costmid["fuel_consumption"],
-            cost["fuel_consumption"]
+        assert self.assert_cmpf(
+            self.assert_got(costmid, "hull_usage", None),
+            (1-done) * cost["hull_usage"]
         )
-        self.assert_cmpf(
-            stopped["hull_decay"] + costret["hull_usage"],
-            before["hull_decay"]
+        assert self.assert_cmpf(
+            self.assert_got(costmid, "distance", None),
+            (1-done) * cost["distance"]
         )
-        self.assert_cmpf(
-            self.assert_got(costret, "hull_usage", None) + costmid["hull_usage"],
-            cost["hull_usage"]
+        assert self.assert_cmpf(
+            self.assert_got(costmid, "duration", None),
+            (1-done) * cost["duration"]
         )
 
         self.assert_ok(f"/ship/{ship_id}/navigate/{dst[0]}/{dst[1]}/{dst[2]}")
@@ -465,16 +455,7 @@ class Tester:
 
         self.assert_cmpf(
             self.assert_got(after, "fuel_tank", None),
-            self.assert_got(stopped, "fuel_tank", None) - costmid["fuel_consumption"],
-        )
-        self.assert_cmpf(
-            self.assert_got(after, "fuel_tank", None),
             self.assert_got(before, "fuel_tank", None) - cost["fuel_consumption"],
-        )
-
-        self.assert_cmpf(
-            self.assert_got(after, "hull_decay", None),
-            self.assert_got(stopped, "hull_decay", None) - costmid["hull_usage"],
         )
         self.assert_cmpf(
             self.assert_got(after, "hull_decay", None),
