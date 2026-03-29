@@ -1,13 +1,13 @@
 #![allow(unexpected_cfgs)]
-use ntex::web;
+use actix_web::middleware::Logger;
 
 use simeis_data::game::Game;
 
 mod api;
 
-pub type GameState = ntex::web::types::State<Game>;
+pub type GameState = actix_web::web::Data<Game>;
 
-#[ntex::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     #[cfg(not(feature = "testing"))]
     let port = 8080;
@@ -17,23 +17,23 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::builder()
         .parse_default_env()
-        .filter_module("ntex_server", log::LevelFilter::Warn)
-        .filter_module("ntex_io", log::LevelFilter::Warn)
-        .filter_module("ntex_rt", log::LevelFilter::Warn)
-        .filter_module("ntex::http::h1", log::LevelFilter::Warn)
+        .filter_module("actix_web_server", log::LevelFilter::Warn)
+        .filter_module("actix_web_io", log::LevelFilter::Warn)
+        .filter_module("actix_web_rt", log::LevelFilter::Warn)
+        .filter_module("actix_web::http::h1", log::LevelFilter::Warn)
         .init();
 
     log::info!("Running on http://0.0.0.0:{port}");
     let (gamethread, state) = Game::init();
     let game = state.clone();
 
-    let res = web::HttpServer::new(async move || {
-        web::App::new()
-            .middleware(web::middleware::Logger::default())
-            .state(state.clone())
+    let res = actix_web::HttpServer::new(move || {
+        actix_web::App::new()
+            .wrap(Logger::default())
+            .app_data(state.clone())
             .configure(api::configure)
     })
-    .stop_runtime()
+    // .stop_runtime()
     .bind(("0.0.0.0", port))?
     .run()
     .await;
