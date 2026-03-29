@@ -179,6 +179,11 @@ impl Ship {
         } else {
             self.stats.speed = 0.0;
         };
+        #[cfg(feature = "extraspeed")]
+        {
+            self.stats.speed *= 1000.0;
+            self.stats.fuel_consumption *= 1000.0;
+        }
         self.stats.speed *= 1.0 - self.cargo.slowing_ratio();
     }
 

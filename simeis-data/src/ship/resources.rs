@@ -71,7 +71,12 @@ impl Resource {
     }
 
     pub fn extraction_difficulty(&self) -> f64 {
-        let base = 0.25;
+        let mut base = 0.25;
+
+        #[cfg(feature = "extraspeed")]
+        {
+            base /= 1000.0;            
+        }
         match self {
             Resource::Stone | Resource::Hydrogen => base,
             Resource::Iron | Resource::Oxygen => 3.75 * base,
