@@ -77,8 +77,9 @@ impl SimeisSDK {
             player_id: None,
             player_key: None,
         };
-        assert!(sdk.ping());
-        sdk.setup_player(username, false);
+        assert!(sdk.ping(), "Unable to connect to server, ping failed");
+        sdk.setup_player(username, false)
+            .expect("Unable to setup player");
         sdk
     }
 
@@ -115,7 +116,7 @@ impl SimeisSDK {
         matches!(json_get_string("ping", &got), Some("pong"))
     }
 
-    fn setup_player(&mut self, mut username: String, force_register: bool) {
+    fn setup_player(&mut self, mut username: String, force_register: bool) -> Result<(), Value> {
         username = username
             .chars()
             .filter(|c| c.is_alphanumeric())
@@ -125,7 +126,7 @@ impl SimeisSDK {
         let path = PathBuf::from(format!("./{username}.json"));
 
         let player = if !path.exists() || force_register {
-            let player_tmp = self.get(format!("/player/new/{username}")).unwrap();
+            let player_tmp = self.get(format!("/player/new/{username}"))?;
             let player_json_str = serde_json::to_string(&player_tmp).unwrap();
             std::fs::write(&path, player_json_str).expect("Unable to write player data to path");
             player_tmp
@@ -149,6 +150,7 @@ impl SimeisSDK {
             println!("!!! Player already lost, please restart the server to reset the game");
             std::process::exit(0);
         }
+        Ok(())
     }
 
     pub fn get_player_status(&self) -> ApiResult {

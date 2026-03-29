@@ -32,7 +32,7 @@ pub enum SpaceObject {
 
 pub struct Galaxy {
     objects: BTreeMap<SpaceCoord, SpaceObject>,
-    discovered: Vec<GalaxySector>,    // TODO (#6) Index by sector ID in a BTreeMap
+    discovered: Vec<GalaxySector>, // TODO (#6) Index by sector ID in a BTreeMap
 }
 
 impl Galaxy {
