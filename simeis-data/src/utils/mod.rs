@@ -11,16 +11,17 @@ pub struct AsyncSleepFuture {
 impl std::future::Future for AsyncSleepFuture {
     type Output = ();
 
-    fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if self.start.elapsed() >= self.dur {
             Poll::Ready(())
         } else {
+            cx.waker().wake_by_ref();
             Poll::Pending
         }
     }
 }
 
-pub async fn sleep(dur:Duration) -> AsyncSleepFuture {
+pub fn sleep(dur:Duration) -> AsyncSleepFuture {
     AsyncSleepFuture {
         dur,
         start: std::time::Instant::now(),

@@ -4,7 +4,6 @@ use std::time::{Duration, Instant};
 
 use mea::mpsc::{BoundedReceiver, BoundedSender, RecvError};
 use mea::rwlock::RwLock;
-use compio::runtime::JoinHandle;
 
 #[cfg(not(feature = "testing"))]
 use mea::mpsc::TryRecvError;
@@ -49,7 +48,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub async fn init() -> (JoinHandle<()>, Game) {
+    pub async fn init() -> (std::thread::JoinHandle<()>, Game) {
         let (send_stop, recv_stop) = mea::mpsc::bounded(5);
         let (syssend, sysrecv) = SyslogSend::channel();
         let tstart = std::time::SystemTime::now()
@@ -71,16 +70,18 @@ impl Game {
         };
 
         let thread_data = data.clone();
+        let thread = std::thread::spawn(move || {
+            let rt = compio::runtime::Runtime::new().unwrap();
+            rt.block_on(thread_data.start(recv_stop, sysrecv));
+            rt.run();
+        });
         // TODO Reduce stack size from this task, > 1024
-        let thread = compio::runtime::spawn((async move || {
-            thread_data.start(recv_stop, sysrecv).await
-        })());
         (thread, data)
     }
 
     #[allow(unused_variables, unused_mut)]
     pub async fn start(&self, mut stop: BoundedReceiver<GameSignal>, syslog: SyslogRecv) {
-        log::debug!("Started thread");
+        log::info!("Game thread started");
         let sleepmin_iter = ITER_PERIOD;
         let mut last_iter = Instant::now();
         let mut market_last_tick = Instant::now();
@@ -108,7 +109,8 @@ impl Game {
                     #[cfg(not(feature = "testing"))]
                     {
                         let took = Instant::now() - last_iter;
-                        crate::utils::sleep(sleepmin_iter.saturating_sub(took)).await;
+                        let t = sleepmin_iter.saturating_sub(took);
+                        crate::utils::sleep(t).await;
                         last_iter = Instant::now();
                     }
                 }
@@ -176,13 +178,6 @@ impl Game {
         }
 
         syslog.update().await;
-    }
-
-    pub async fn stop(self, handle: JoinHandle<()>) {
-        log::info!("Asking game thread to exit");
-        self.send_sig.send(GameSignal::Stop).await.unwrap();
-        let _ = handle.await;
-        log::info!("Game stopped");
     }
 
     pub async fn new_player(&self, name: String) -> Result<(PlayerId, String), Errcode> {

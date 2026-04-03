@@ -36,13 +36,12 @@ async fn main() -> std::io::Result<()> {
             .configure(api::configure)
     })
     .workers(64)
-    .shutdown_timeout(2.into())
     .bind(("0.0.0.0", port))?
     .run()
     .await;
 
     log::info!("Server stopped, stopping game thread");
     stop_chan.send(GameSignal::Stop).await.unwrap();
-    gamethread.await.unwrap();
+    gamethread.join().unwrap();
     res
 }
