@@ -26,7 +26,7 @@ use crate::errors::Errcode;
 use crate::galaxy::scan::ScanResult;
 use crate::galaxy::station::{Station, StationId};
 use crate::galaxy::Galaxy;
-use crate::market::{MARKET_CHANGE_SEC, Market, MarketTx};
+use crate::market::{Market, MarketTx, MARKET_CHANGE_SEC};
 use crate::player::{Player, PlayerId, PlayerKey};
 use crate::ship::resources::{ExtractionInfo, Resource};
 use crate::ship::{Ship, ShipId, ShipState};
@@ -49,16 +49,18 @@ pub enum GameSignal {
 
 #[derive(Clone)]
 pub struct Game {
+    // Locked
     pub players: Arc<ShardedLockedData<PlayerId, Arc<RwLock<Player>>>>,
-    pub taken_names: Arc<RwLock<Vec<String>>>,
     pub player_index: Arc<ShardedLockedData<PlayerKey, PlayerId>>,
+    pub taken_names: Arc<RwLock<Vec<String>>>,
     pub galaxy: Arc<RwLock<Galaxy>>,
+
+    pub init_station: (StationId, Arc<RwLock<Station>>),
     pub market: Arc<Market>,
     pub syslog: SyslogSend,
     pub fifo_events: SyslogFifo,
     pub tstart: f64,
     pub send_sig: BoundedSender<GameSignal>,
-    pub init_station: (StationId, Arc<RwLock<Station>>),
 }
 
 impl Game {
@@ -203,13 +205,18 @@ impl Game {
         let key = BASE64_STANDARD.encode(player.key);
 
         self.player_index.insert(player.key, player.id).await;
-        self.players.insert(player.id, Arc::new(RwLock::new(player))).await;
+        self.players
+            .insert(player.id, Arc::new(RwLock::new(player)))
+            .await;
         self.syslog.event(&pid, SyslogEvent::GameStarted).await;
         Ok((pid, key))
     }
 
-    pub async fn get_player(&self, key: &PlayerKey) -> Result<(PlayerId, Arc<RwLock<Player>>), Errcode> {
-        let Some(id) = self.player_index.clone_val(&key).await else {
+    pub async fn get_player(
+        &self,
+        key: &PlayerKey,
+    ) -> Result<(PlayerId, Arc<RwLock<Player>>), Errcode> {
+        let Some(id) = self.player_index.clone_val(key).await else {
             return Err(Errcode::NoPlayerWithKey);
         };
         let player = self.players.clone_val(&id).await.unwrap();
@@ -229,7 +236,12 @@ impl Game {
         Ok(fifo.remove_all())
     }
 
-    pub async fn map_station<F, T>(&self, pkey: &PlayerKey, id: &StationId, f: F) -> Result<T, Errcode>
+    pub async fn map_station<F, T>(
+        &self,
+        pkey: &PlayerKey,
+        id: &StationId,
+        f: F,
+    ) -> Result<T, Errcode>
     where
         F: for<'a> FnOnce(&'a PlayerId, &'a Station) -> BoxFuture<'a, Result<T, Errcode>>,
     {
@@ -243,7 +255,12 @@ impl Game {
         data
     }
 
-    pub async fn map_station_mut<F, T>(&self, pkey: &PlayerKey, id: &StationId, f: F) -> Result<T, Errcode>
+    pub async fn map_station_mut<F, T>(
+        &self,
+        pkey: &PlayerKey,
+        id: &StationId,
+        f: F,
+    ) -> Result<T, Errcode>
     where
         F: for<'a> FnOnce(&'a PlayerId, &'a mut Station) -> BoxFuture<'a, Result<T, Errcode>>,
     {
@@ -264,11 +281,16 @@ impl Game {
         let (pid, player) = self.get_player(pkey).await?;
         let player = player.read().await;
         let ship = player.get_ship(id)?;
-        let data = f(pid, &ship).await;
+        let data = f(pid, ship).await;
         data
     }
 
-    pub async fn map_ship_mut<F, T>(&self, pkey: &PlayerKey, id: &ShipId, f: F) -> Result<T, Errcode>
+    pub async fn map_ship_mut<F, T>(
+        &self,
+        pkey: &PlayerKey,
+        id: &ShipId,
+        f: F,
+    ) -> Result<T, Errcode>
     where
         F: for<'a> FnOnce(PlayerId, &'a mut Ship) -> BoxFuture<'a, Result<T, Errcode>>,
     {
@@ -279,34 +301,50 @@ impl Game {
         data
     }
 
-    pub async fn map_ship_in_station<F, T>(&self, pkey: &PlayerKey, station_id: &StationId, ship_id: &ShipId, f: F) -> Result<T, Errcode>
+    pub async fn map_ship_in_station<F, T>(
+        &self,
+        pkey: &PlayerKey,
+        station_id: &StationId,
+        ship_id: &ShipId,
+        f: F,
+    ) -> Result<T, Errcode>
     where
         F: for<'a> FnOnce(PlayerId, &'a Station, &'a Ship) -> BoxFuture<'a, Result<T, Errcode>>,
     {
         let (pid, player) = self.get_player(pkey).await?;
         let player = player.read().await;
-        if !player.ship_in_station(&ship_id, &station_id).await? {
+        if !player.ship_in_station(ship_id, station_id).await? {
             return Err(Errcode::ShipNotInStation);
         }
         // SAFETY Checked in function above
         let ship = player.ships.get(ship_id).unwrap();
-        let station = player.stations.get(&station_id).unwrap();
+        let station = player.stations.get(station_id).unwrap();
         let station = station.read().await;
-        let data = f(pid, &station, &ship).await;
+        let data = f(pid, &station, ship).await;
         data
     }
 
-    pub async fn map_ship_mut_in_station_mut<F, T>(&self, pkey: &PlayerKey, station_id: &StationId, ship_id: &ShipId, f: F) -> Result<T, Errcode>
+    pub async fn map_ship_mut_in_station_mut<F, T>(
+        &self,
+        pkey: &PlayerKey,
+        station_id: &StationId,
+        ship_id: &ShipId,
+        f: F,
+    ) -> Result<T, Errcode>
     where
-        F: for<'a> FnOnce(PlayerId, &'a mut Station, &'a mut Ship) -> BoxFuture<'a, Result<T, Errcode>>,
+        F: for<'a> FnOnce(
+            PlayerId,
+            &'a mut Station,
+            &'a mut Ship,
+        ) -> BoxFuture<'a, Result<T, Errcode>>,
     {
         let (pid, player) = self.get_player(pkey).await?;
         let mut player = player.write().await;
-        if !player.ship_in_station(&ship_id, &station_id).await? {
+        if !player.ship_in_station(ship_id, station_id).await? {
             return Err(Errcode::ShipNotInStation);
         }
         // SAFETY Checked in function above
-        let station = player.stations.get(&station_id).unwrap().clone();
+        let station = player.stations.get(station_id).unwrap().clone();
         let ship = player.ships.get_mut(ship_id).unwrap();
         let mut station = station.write().await;
         let data = f(pid, &mut station, ship).await;
@@ -333,18 +371,21 @@ impl Game {
         data
     }
 
-    pub async fn player_to_json(&self, pkey: &PlayerKey, id: &PlayerId) -> Result<serde_json::Value, Errcode> {
+    pub async fn player_to_json(
+        &self,
+        pkey: &PlayerKey,
+        id: &PlayerId,
+    ) -> Result<serde_json::Value, Errcode> {
         let (pid, player) = self.get_player(pkey).await?;
         let player = player.read().await;
         if pid == *id {
             let mut stations = BTreeMap::new();
             for (id, station) in player.stations.iter() {
                 let station = station.read().await;
-                stations.insert(id, station.to_json(&id).await);
+                stations.insert(id, station.to_json(id).await);
             }
-            let ships = serde_json::to_value(
-                player.ships.values().collect::<Vec<&Ship>>()
-            ).unwrap();
+            let ships =
+                serde_json::to_value(player.ships.values().collect::<Vec<&Ship>>()).unwrap();
             Ok(serde_json::json!({
                 "id": id,
                 "name": player.name,
@@ -361,8 +402,12 @@ impl Game {
         }
     }
 
-    pub async fn scan_galaxy(&self, pkey: &PlayerKey, station_id: &StationId) -> Result<ScanResult, Errcode> {
-        let (_, player) = self.get_player(&pkey).await?;
+    pub async fn scan_galaxy(
+        &self,
+        pkey: &PlayerKey,
+        station_id: &StationId,
+    ) -> Result<ScanResult, Errcode> {
+        let (_, player) = self.get_player(pkey).await?;
         let player = player.read().await;
         let galaxy = self.galaxy.read().await;
         let Some(station) = player.stations.get(station_id) else {
@@ -372,8 +417,12 @@ impl Game {
         Ok(station.scan(&galaxy).await)
     }
 
-    pub async fn start_player_extraction(&self, pkey: &PlayerKey, ship_id: &ShipId) -> Result<ExtractionInfo, Errcode> {
-        let (_, player) = self.get_player(&pkey).await?;
+    pub async fn start_player_extraction(
+        &self,
+        pkey: &PlayerKey,
+        ship_id: &ShipId,
+    ) -> Result<ExtractionInfo, Errcode> {
+        let (_, player) = self.get_player(pkey).await?;
         let mut player = player.write().await;
         let ship = player.get_ship_mut(ship_id)?;
         let galaxy = self.galaxy.read().await;
@@ -383,28 +432,44 @@ impl Game {
         ship.start_extraction(&planet).await
     }
 
-    pub async fn player_market_buy(&self, pkey: &PlayerKey, station_id: &StationId, resource: &Resource, amnt: f64) -> Result<MarketTx, Errcode> {
-        let (_, player) = self.get_player(&pkey).await?;
+    pub async fn player_market_buy(
+        &self,
+        pkey: &PlayerKey,
+        station_id: &StationId,
+        resource: &Resource,
+        amnt: f64,
+    ) -> Result<MarketTx, Errcode> {
+        let (_, player) = self.get_player(pkey).await?;
         let mut player = player.write().await;
         let Some(station) = player.stations.get(station_id) else {
             return Err(Errcode::NoSuchStation(*station_id));
         };
         let mut station = station.write().await;
-        let tx = station.buy_resource(&self.market, &player.id, resource, amnt).await?;
+        let tx = station
+            .buy_resource(&self.market, &player.id, resource, amnt)
+            .await?;
         drop(station);
         player.money -= tx.removed_money.unwrap();
         player.score -= tx.removed_money.unwrap();
         Ok(tx)
     }
 
-    pub async fn player_market_sell(&self, pkey: &PlayerKey, station_id: &StationId, resource: &Resource, amnt: f64) -> Result<MarketTx, Errcode> {
-        let (_, player) = self.get_player(&pkey).await?;
+    pub async fn player_market_sell(
+        &self,
+        pkey: &PlayerKey,
+        station_id: &StationId,
+        resource: &Resource,
+        amnt: f64,
+    ) -> Result<MarketTx, Errcode> {
+        let (_, player) = self.get_player(pkey).await?;
         let mut player = player.write().await;
         let Some(station) = player.stations.get(station_id) else {
             return Err(Errcode::NoSuchStation(*station_id));
         };
         let mut station = station.write().await;
-        let tx = station.sell_resource(&self.market, &player.id, resource, amnt).await?;
+        let tx = station
+            .sell_resource(&self.market, &player.id, resource, amnt)
+            .await?;
         drop(station);
         player.money += tx.added_money.unwrap();
         player.score += tx.added_money.unwrap();

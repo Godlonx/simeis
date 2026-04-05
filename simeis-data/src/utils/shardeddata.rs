@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 use std::hash::Hasher;
 
 use mea::rwlock::RwLock;
@@ -7,21 +7,21 @@ pub trait ShardDataKey: Ord + Clone {
     fn get_shard_idx(&self, totcap: usize) -> usize;
 }
 
+// TODO Debug this, ensure it's evenly repartited
 pub struct ShardedLockedData<K, T> {
-    shards: Vec<Arc<RwLock<BTreeMap<K, T>>>>,
-
+    shards: Vec<RwLock<BTreeMap<K, T>>>,
 }
 
 impl<K: ShardDataKey, T> ShardedLockedData<K, T> {
     pub fn new(cap: usize) -> ShardedLockedData<K, T> {
         let mut shards = vec![];
         for _ in 0..cap {
-            shards.push(Arc::new(RwLock::new(BTreeMap::new())));
+            shards.push(RwLock::new(BTreeMap::new()));
         }
         ShardedLockedData { shards }
     }
 
-    fn get_shard(&self, key: &K) -> &Arc<RwLock<BTreeMap<K, T>>> {
+    fn get_shard(&self, key: &K) -> &RwLock<BTreeMap<K, T>> {
         let idx = key.get_shard_idx(self.shards.len());
         debug_assert!(idx < self.shards.len());
         debug_assert!(idx > 0);
@@ -90,8 +90,8 @@ impl ShardDataKey for crate::player::PlayerKey {
     fn get_shard_idx(&self, totcap: usize) -> usize {
         let mut h = std::hash::DefaultHasher::new();
         h.write(self);
-        let n= h.finish() as usize;
-        let sep = (usize::MAX as usize) / totcap;
+        let n = h.finish() as usize;
+        let sep = usize::MAX / totcap;
         n / sep
     }
 }

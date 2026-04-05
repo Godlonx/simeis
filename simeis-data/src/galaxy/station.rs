@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
+use mea::rwlock::RwLock;
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
-use mea::rwlock::RwLock;
 
 use crate::crew::{Crew, CrewId, CrewMember, CrewMemberType};
 use crate::errors::Errcode;
@@ -135,7 +135,7 @@ impl Station {
             return Err(Errcode::WrongCrewType(CrewMemberType::Pilot));
         }
         ship.pilot = Some(*id);
-        let pilot = pd.idle_crew.0.remove(&id).unwrap();
+        let pilot = pd.idle_crew.0.remove(id).unwrap();
         ship.crew.0.insert(*id, pilot);
         ship.update_perf_stats();
         Ok(())
@@ -148,7 +148,9 @@ impl Station {
         mod_id: &ShipModuleId,
     ) -> Result<(), Errcode> {
         self.ensure_has_player_data(&ship.owner).await;
-        let cm = self.get_idle_crew(&ship.owner, id, CrewMemberType::Operator).await?;
+        let cm = self
+            .get_idle_crew(&ship.owner, id, CrewMemberType::Operator)
+            .await?;
         let Some(module) = ship.modules.get_mut(mod_id) else {
             return Err(Errcode::NoSuchModule(*mod_id));
         };
@@ -160,11 +162,16 @@ impl Station {
         }
         module.operator = Some(*id);
         let mut pd = self.player_data.get(&ship.owner).unwrap().write().await;
-        ship.crew.0.insert(*id, pd.idle_crew.0.remove(&id).unwrap());
+        ship.crew.0.insert(*id, pd.idle_crew.0.remove(id).unwrap());
         Ok(())
     }
 
-    pub async fn get_idle_crew(&mut self, pid: &PlayerId, id: &CrewId, ctype: CrewMemberType) -> Result<CrewMember, Errcode> {
+    pub async fn get_idle_crew(
+        &mut self,
+        pid: &PlayerId,
+        id: &CrewId,
+        ctype: CrewMemberType,
+    ) -> Result<CrewMember, Errcode> {
         self.ensure_has_player_data(pid).await;
         let pd = self.player_data.get(pid).unwrap().write().await;
         let Some(cm) = pd.idle_crew.0.get(id) else {
@@ -183,8 +190,8 @@ impl Station {
         resource: &Resource,
         amnt: f64,
     ) -> Result<MarketTx, Errcode> {
-        self.ensure_has_player_data(&player).await;
-        let mut pd = self.player_data.get(&player).unwrap().write().await;
+        self.ensure_has_player_data(player).await;
+        let mut pd = self.player_data.get(player).unwrap().write().await;
         let Some(trader) = pd.trader else {
             return Err(Errcode::NoTraderAssigned);
         };
@@ -207,8 +214,8 @@ impl Station {
         resource: &Resource,
         amnt: f64,
     ) -> Result<MarketTx, Errcode> {
-        self.ensure_has_player_data(&player).await;
-        let mut pd = self.player_data.get(&player).unwrap().write().await;
+        self.ensure_has_player_data(player).await;
+        let mut pd = self.player_data.get(player).unwrap().write().await;
         let Some(trader) = pd.trader else {
             return Err(Errcode::NoTraderAssigned);
         };
@@ -294,7 +301,8 @@ impl Station {
         let Some(pd) = self.player_data.get(id) else {
             return 0.0;
         };
-        pd.read().await
+        pd.read()
+            .await
             .cargo
             .resources
             .iter()
@@ -324,7 +332,8 @@ impl Station {
 
     pub async fn ensure_has_player_data(&mut self, id: &PlayerId) {
         if !self.player_data.contains_key(id) {
-            self.player_data.insert(*id, RwLock::new(StationPlayerData::new()));
+            self.player_data
+                .insert(*id, RwLock::new(StationPlayerData::new()));
         }
     }
 
@@ -370,9 +379,7 @@ impl Station {
     }
 
     pub async fn upgr_trader_price(&self, id: &PlayerId) -> Option<f64> {
-        let Some(pd) = self.player_data.get(id) else {
-            return None;
-        };
+        let pd = self.player_data.get(id)?;
         let pd = pd.read().await;
         pd.trader.map(|trader| {
             let cm = pd.crew.0.get(&trader).unwrap();

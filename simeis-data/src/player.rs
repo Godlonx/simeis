@@ -79,8 +79,12 @@ impl Player {
     }
 
     #[inline]
-    pub async fn ship_in_station(&self, ship: &ShipId, station: &StationId) -> Result<bool, Errcode> {
-        let ship = self.get_ship(&ship)?;
+    pub async fn ship_in_station(
+        &self,
+        ship: &ShipId,
+        station: &StationId,
+    ) -> Result<bool, Errcode> {
+        let ship = self.get_ship(ship)?;
         let Some(station) = self.stations.get(station) else {
             return Err(Errcode::NoSuchStation(*station));
         };
@@ -122,7 +126,11 @@ impl Player {
         }
     }
 
-    pub async fn buy_ship(&mut self, station_id: &StationId, ship_id: &ShipId) -> Result<ShipId, Errcode> {
+    pub async fn buy_ship(
+        &mut self,
+        station_id: &StationId,
+        ship_id: &ShipId,
+    ) -> Result<ShipId, Errcode> {
         let Some(station) = self.stations.get(station_id) else {
             return Err(Errcode::NoSuchStation(*station_id));
         };
@@ -181,7 +189,8 @@ impl Player {
         ship_id: &ShipId,
         upgrade: &ShipUpgrade,
     ) -> Result<f64, Errcode> {
-        let ship = self.ships
+        let ship = self
+            .ships
             .get_mut(ship_id)
             .ok_or(Errcode::ShipNotFound(*ship_id))?;
         let Some(station) = self.stations.get(station).cloned() else {
@@ -199,8 +208,12 @@ impl Player {
         Ok(price)
     }
 
-
-    pub async fn buy_ship_module_upgrade(&mut self, station_id: &StationId, ship_id: &ShipId, mod_id: &ShipModuleId) -> Result<(f64, u8), Errcode> {
+    pub async fn buy_ship_module_upgrade(
+        &mut self,
+        station_id: &StationId,
+        ship_id: &ShipId,
+        mod_id: &ShipModuleId,
+    ) -> Result<(f64, u8), Errcode> {
         if !self.ship_in_station(ship_id, station_id).await? {
             return Err(Errcode::ShipNotInStation);
         }
@@ -271,7 +284,11 @@ impl Player {
         }
     }
 
-    pub async fn buy_station_cargo(&mut self, station_id: &StationId, amnt: usize) -> Result<ShipCargo, Errcode> {
+    pub async fn buy_station_cargo(
+        &mut self,
+        station_id: &StationId,
+        amnt: usize,
+    ) -> Result<ShipCargo, Errcode> {
         let Some(station) = self.stations.get_mut(station_id) else {
             return Err(Errcode::NoSuchStation(*station_id));
         };
@@ -283,5 +300,4 @@ impl Player {
         self.money -= cost;
         Ok(station.add_cargo_cap(&self.id, amnt).await)
     }
-
 }

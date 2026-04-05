@@ -1,9 +1,9 @@
 #![allow(clippy::type_complexity)]
-use std::sync::Arc;
+use mea::mpsc::TryRecvError;
+use mea::mpsc::{BoundedReceiver, BoundedSender};
 use mea::mutex::Mutex;
 use mea::rwlock::RwLock;
-use mea::mpsc::{BoundedReceiver, BoundedSender};
-use mea::mpsc::TryRecvError;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use strum::IntoStaticStr;
@@ -89,7 +89,8 @@ impl SyslogSend {
     }
 }
 
-pub type SyslogFifo = Arc<RwLock<ShardedLockedData<PlayerId, Arc<RwLock<Fifo<(f64, SyslogEvent)>>>>>>;
+pub type SyslogFifo =
+    Arc<RwLock<ShardedLockedData<PlayerId, Arc<RwLock<Fifo<(f64, SyslogEvent)>>>>>>;
 
 pub struct SyslogRecv {
     recv: Mutex<BoundedReceiver<SyslogData>>,

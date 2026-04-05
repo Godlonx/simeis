@@ -35,6 +35,7 @@ pub enum SpaceObject {
     Planet(Arc<planet::Planet>),
 }
 
+// TODO Use a RwLock on each of the field, and remove the one from the Game struct
 pub struct Galaxy {
     objects: BTreeMap<SpaceCoord, SpaceObject>,
     discovered: Vec<GalaxySector>, // TODO (#6) Index by sector ID in a BTreeMap

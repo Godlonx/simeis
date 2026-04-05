@@ -74,7 +74,10 @@ impl Market {
             let mut price = price.write().await;
 
             let new_price = self.get_new_price(rng, res, *price);
-            log::trace!("{res:?} {new_price} ({:?}%)", (new_price / res.base_price()) * 100.0);
+            log::trace!(
+                "{res:?} {new_price} ({:?}%)",
+                (new_price / res.base_price()) * 100.0
+            );
             *price = new_price;
         }
     }

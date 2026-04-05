@@ -1,5 +1,10 @@
 mod shardeddata;
-use std::{future::Future, pin::Pin, task::{Context, Poll}, time::{Duration, Instant}};
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+    time::{Duration, Instant},
+};
 
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
@@ -23,7 +28,7 @@ impl std::future::Future for AsyncSleepFuture {
     }
 }
 
-pub fn sleep(dur:Duration) -> AsyncSleepFuture {
+pub fn sleep(dur: Duration) -> AsyncSleepFuture {
     AsyncSleepFuture {
         dur,
         start: std::time::Instant::now(),
