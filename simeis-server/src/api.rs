@@ -944,7 +944,6 @@ async fn gamestats(srv: GameState) -> impl web::Responder {
     let all_players = srv.players.get_all_keys().await;
     let mut all_stations = BTreeMap::new();
     for pid in all_players {
-        let tstart = std::time::Instant::now();
         let player = srv.players.clone_val(&pid).await.unwrap();
         let player = player.read().await;
         let potential = {
@@ -971,7 +970,6 @@ async fn gamestats(srv: GameState) -> impl web::Responder {
                 "stations": all_stations,
             }),
         );
-        log::debug!("Got data for {} in {:?}", player.name, tstart.elapsed());
     }
     build_response(Ok(to_value(data).unwrap()))
 }

@@ -30,6 +30,7 @@ async fn main() -> std::io::Result<()> {
     let stop_chan = state.send_sig.clone();
 
     // TODO FIXME Quand worker > 1, et beaucoup de players, je finir par avoir un deadlock
+    //     Possiblement dû au register de nouveau joueurs
     let res = web::HttpServer::new(async move || {
         let game_state = state.clone();
         web::App::new()
@@ -37,8 +38,8 @@ async fn main() -> std::io::Result<()> {
             .state(game_state)
             .configure(api::configure)
     })
-    // .workers(64)
-    .workers(1)
+    .workers(64)
+    // .workers(1)
     .bind(("0.0.0.0", port))?
     .run()
     .await;
