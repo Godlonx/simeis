@@ -7,7 +7,6 @@ pub trait ShardDataKey: Ord + Clone {
     fn get_shard_idx(&self, totcap: usize) -> usize;
 }
 
-// TODO Debug this, ensure it's evenly repartited
 pub struct ShardedLockedData<K, T> {
     shards: Vec<RwLock<BTreeMap<K, T>>>,
 }
@@ -74,20 +73,6 @@ impl ShardDataKey for u16 {
     fn get_shard_idx(&self, totcap: usize) -> usize {
         let sep = (u16::MAX as usize) / totcap;
         (*self as usize) / sep
-    }
-}
-
-impl ShardDataKey for (u32, u32, u32) {
-    fn get_shard_idx(&self, _totcap: usize) -> usize {
-        // TODO
-        todo!()
-    }
-}
-
-impl ShardDataKey for u32 {
-    fn get_shard_idx(&self, _totcap: usize) -> usize {
-        // TODO
-        todo!()
     }
 }
 

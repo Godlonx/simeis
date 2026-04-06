@@ -141,7 +141,6 @@ async fn upgrade_station_crew(
     build_response(data)
 }
 
-// TODO (#14) Make this URL generic: work for any role on the station
 // Assign a crew member as a trader on a station. The level of the trader will affect the fee rate applied on the market
 #[web::post("/assign/{crewid}/trading")]
 async fn assign_trader(

@@ -6,7 +6,9 @@ use crate::GameState;
 
 pub type ApiResult = Result<Value, Errcode>;
 
-// TODO (#14) Use query parameters (with ntex::web::types::Query) instead of plain URLs
+// TODO Pass complex requests via POST body instead of url
+// - Navigation
+// - Upgrades
 
 macro_rules! get_player_key {
     ($req:ident) => {

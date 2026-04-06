@@ -106,7 +106,6 @@ async fn shipyard_list_upgrades(
     build_response(data)
 }
 
-// TODO POST body contains the specific upgrade to apply
 // Buy an upgrade and install it on a ship
 #[web::post("/upgrade/{ship_id}/{upgrade_type}")]
 async fn shipyard_buy_upgrade(
