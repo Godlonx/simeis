@@ -29,6 +29,10 @@ pub fn get_position(planet: &Value) -> Option<(u64, u64, u64)> {
 }
 
 pub fn json_get_key<'a>(key: &str, mut val: &'a Value) -> Option<&'a Value> {
+    if !key.contains(".") {
+        let obj = val.as_object()?;
+        return obj.get(key);
+    }
     for k in key.split(".") {
         let obj = val.as_object()?;
         val = obj.get(k)?;
@@ -83,14 +87,23 @@ impl SimeisSDK {
         sdk
     }
 
-    pub fn get<T: ToString>(&self, path: T) -> ApiResult {
+    fn api<T: ToString>(&self, path: T, get: bool) -> ApiResult {
         debug_assert!(path.to_string().starts_with("/"));
 
-        let mut req = ureq::get(format!("{}{}", self.url, path.to_string()));
-        if let Some(ref key) = self.player_key {
-            req = req.query("key", key);
-        }
-        let mut got = req.call().map_err(|err| {
+        let got = if get {
+            let mut req = ureq::get(format!("{}{}", self.url, path.to_string()));
+            if let Some(ref key) = self.player_key {
+                req = req.header("Simeis-Key", key);
+            }
+            req.call()
+        } else {
+            let mut req = ureq::post(format!("{}{}", self.url, path.to_string()));
+            if let Some(ref key) = self.player_key {
+                req = req.header("Simeis-Key", key);
+            }
+            req.send(&[0u8;0])
+        };
+        let mut got = got.map_err(|err| {
             serde_json::json!({
                 "status": 0,
                 "error": format!("{err:?}"),
@@ -107,6 +120,14 @@ impl SimeisSDK {
             .remove("error")
             .expect("Missing error field in reply");
         if err != "ok" { Err(data) } else { Ok(data) }
+    }
+
+    pub fn get<T: ToString>(&self, path: T) -> ApiResult {
+        self.api(path, true)
+    }
+
+    pub fn post<T: ToString>(&self, path: T) -> ApiResult {
+        self.api(path, false)
     }
 
     pub fn ping(&self) -> bool {
@@ -126,7 +147,7 @@ impl SimeisSDK {
         let path = PathBuf::from(format!("./{username}.json"));
 
         let player = if !path.exists() || force_register {
-            let player_tmp = self.get(format!("/player/new/{username}"))?;
+            let player_tmp = self.post(format!("/player/new/{username}"))?;
             let player_json_str = serde_json::to_string(&player_tmp).unwrap();
             std::fs::write(&path, player_json_str).expect("Unable to write player data to path");
             player_tmp
@@ -196,18 +217,18 @@ impl SimeisSDK {
     }
 
     pub fn buy_ship(&self, station_id: u64, ship_id: u64) -> ApiResult {
-        self.get(format!("/station/{station_id}/shipyard/buy/{ship_id}"))
+        self.post(format!("/station/{station_id}/shipyard/buy/{ship_id}"))
     }
 
     pub fn buy_module_on_ship(&self, station_id: u64, ship_id: u64, modtype: &str) -> ApiResult {
-        self.get(format!(
+        self.post(format!(
             "/station/{station_id}/shop/modules/{ship_id}/buy/{}",
             modtype.to_lowercase()
         ))
     }
 
     pub fn hire_crew(&self, station_id: u64, crewtype: &str) -> ApiResult {
-        self.get(format!(
+        self.post(format!(
             "/station/{station_id}/crew/hire/{}",
             crewtype.to_lowercase()
         ))
@@ -220,7 +241,7 @@ impl SimeisSDK {
         crew_id: u64,
         mod_id: u64,
     ) -> ApiResult {
-        self.get(format!(
+        self.post(format!(
             "/station/{station_id}/crew/assign/{crew_id}/{ship_id}/{mod_id}"
         ))
     }
@@ -231,7 +252,7 @@ impl SimeisSDK {
         ship_id: u64,
         pilot_id: u64,
     ) -> ApiResult {
-        self.get(format!(
+        self.post(format!(
             "/station/{station_id}/crew/assign/{pilot_id}/{ship_id}/pilot"
         ))
     }
@@ -247,7 +268,7 @@ impl SimeisSDK {
     }
 
     pub fn assign_trader_to_station(&self, station_id: u64, crew_id: u64) -> ApiResult {
-        self.get(format!(
+        self.post(format!(
             "/station/{station_id}/crew/assign/{crew_id}/trading"
         ))
     }
@@ -259,7 +280,7 @@ impl SimeisSDK {
 
     pub fn travel(&self, ship_id: u64, position: (u64, u64, u64), wait_end: bool) -> ApiResult {
         let (x, y, z) = position;
-        let costs = self.get(format!("/ship/{ship_id}/navigate/{x}/{y}/{z}"))?;
+        let costs = self.post(format!("/ship/{ship_id}/navigate/{x}/{y}/{z}"))?;
         if wait_end {
             let duration = json_get_float("duration", &costs).unwrap();
             std::thread::sleep(Duration::from_secs_f64(duration));
@@ -315,7 +336,7 @@ impl SimeisSDK {
 
         if amnt_got > 0.0 {
             Ok(Some(
-                self.get(format!("/station/{station_id}/repair/{ship_id}"))?,
+                self.post(format!("/station/{station_id}/repair/{ship_id}"))?,
             ))
         } else {
             Ok(None)
@@ -362,7 +383,7 @@ impl SimeisSDK {
 
         if amnt_got > 0.0 {
             Ok(Some(
-                self.get(format!("/station/{station_id}/refuel/{ship_id}"))?,
+                self.post(format!("/station/{station_id}/refuel/{ship_id}"))?,
             ))
         } else {
             Ok(None)
@@ -383,7 +404,7 @@ impl SimeisSDK {
         Ok(all_planets.iter().map(|v| (*v).clone()).collect())
     }
     pub fn mine(&self, ship_id: u64) -> ApiResult {
-        self.get(format!("/ship/{ship_id}/extraction/start"))
+        self.post(format!("/ship/{ship_id}/extraction/start"))
     }
     pub fn return_station_and_unload(
         &self,
@@ -406,7 +427,7 @@ impl SimeisSDK {
             if amnt == 0.0 {
                 continue;
             }
-            let got = self.get(format!("/ship/{ship_id}/unload/{station_id}/{res}/{amnt}"))?;
+            let got = self.post(format!("/ship/{ship_id}/unload/{station_id}/{res}/{amnt}"))?;
             results.push(got);
         }
         Ok(results)
@@ -429,9 +450,9 @@ impl SimeisSDK {
         Ok(resources)
     }
     pub fn sell_resource(&self, station_id: u64, resource: &str, amnt: f64) -> ApiResult {
-        self.get(format!("/market/{station_id}/sell/{resource}/{amnt}"))
+        self.post(format!("/market/{station_id}/sell/{resource}/{amnt}"))
     }
     pub fn buy_resource(&self, station_id: u64, resource: &str, amnt: f64) -> ApiResult {
-        self.get(format!("/market/{station_id}/buy/{resource}/{amnt}"))
+        self.post(format!("/market/{station_id}/buy/{resource}/{amnt}"))
     }
 }

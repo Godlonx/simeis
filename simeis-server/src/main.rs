@@ -21,6 +21,7 @@ async fn main() -> std::io::Result<()> {
         .filter_module("ntex_server", log::LevelFilter::Warn)
         .filter_module("ntex_io", log::LevelFilter::Warn)
         .filter_module("ntex_rt", log::LevelFilter::Warn)
+        .filter_module("ntex_service::cfg", log::LevelFilter::Warn)
         .filter_module("ntex::http::h1", log::LevelFilter::Warn)
         .filter_module("ntex_net::compio::io_impl", log::LevelFilter::Warn)
         .init();

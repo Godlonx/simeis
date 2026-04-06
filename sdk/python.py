@@ -20,13 +20,11 @@ def check_has(alld, key, *req):
 class SimeisSDK:
     def __init__(self, username, ip, port):
         self.url = f"http://{ip}:{port}"
-        assert self.get("/ping")["ping"] == "pong"
+        assert self.api("/ping")["ping"] == "pong"
         self.setup_player(username)
 
-    def get(self, path, **qry):
-        print("GET", path)
-        if hasattr(self, "player"):
-            qry["key"] = self.player["key"]
+    def api(self, path, method="GET", timeout=5, **qry):
+        print(method, path)
 
         tail = ""
         if len(qry) > 0:
@@ -36,7 +34,13 @@ class SimeisSDK:
             ])
 
         qry = f"{self.url}{path}{tail}"
-        reply = urllib.request.urlopen(qry, timeout=15)
+
+        hdr = {}
+        if hasattr(self, "player"):
+            hdr["Simeis-Key"] = self.player["key"]
+        req = urllib.request.Request(qry, headers=hdr, method=method)
+
+        reply = urllib.request.urlopen(req, timeout=timeout)
 
         data = json.loads(reply.read().decode())
         err = data.pop("error")
@@ -44,6 +48,12 @@ class SimeisSDK:
             raise SimeisError(err)
 
         return data
+
+    def get(self, *args, **kwargs):
+        return self.api(*args, method="GET", **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.api(*args, method="POST", **kwargs)
         
     # If we have a file containing the player ID and key, use it
     # If not, create a new player
@@ -54,7 +64,7 @@ class SimeisSDK:
 
         # If we don't have any existing account
         if force_register or not os.path.isfile(f"./{username}.json"):
-            player = self.get(f"/player/new/{username}")
+            player = self.post(f"/player/new/{username}")
             with open(f"./{username}.json", "w") as f:
                 json.dump(player, f, indent=2)       
             self.player = player
@@ -97,23 +107,23 @@ class SimeisSDK:
         return sorted(all, key = lambda ship: ship["price"])
 
     def buy_ship(self, sta, shipid):
-        return self.get(f"/station/{sta}/shipyard/buy/{shipid}")
+        return self.post(f"/station/{sta}/shipyard/buy/{shipid}")
 
     def buy_module_on_ship(self, sta, shipid, modtype):
-        return self.get(f"/station/{sta}/shop/modules/{shipid}/buy/{modtype}")
+        return self.post(f"/station/{sta}/shop/modules/{shipid}/buy/{modtype}")
 
     def hire_crew(self, sta, crewtype):
-        return self.get(f"/station/{sta}/crew/hire/{crewtype.lower()}")
+        return self.post(f"/station/{sta}/crew/hire/{crewtype.lower()}")
 
     def assign_crew_to_ship(self, sta, shipid, operator_id, role):
-        return self.get(f"/station/{sta}/crew/assign/{operator_id}/{shipid}/{role}")
+        return self.post(f"/station/{sta}/crew/assign/{operator_id}/{shipid}/{role}")
 
     def station_has_trader(self, sta):
         station = self.get(f"/station/{sta}")
         return check_has(station["crew"], "member_type", "Trader")
 
     def assign_trader_to_station(self, sta, trader_id):
-        return self.get(f"/station/{sta}/crew/assign/{trader_id}/trading")
+        return self.post(f"/station/{sta}/crew/assign/{trader_id}/trading")
 
     def compute_travel_cost(self, ship_id, position):
         x, y, z = position
@@ -121,7 +131,7 @@ class SimeisSDK:
 
     def travel(self, ship_id, position, wait_end=True):
         x, y, z = position
-        costs = self.get(f"/ship/{ship_id}/navigate/{x}/{y}/{z}")
+        costs = self.post(f"/ship/{ship_id}/navigate/{x}/{y}/{z}")
         if wait_end:
             time.sleep(costs["duration"])
             self.wait_until_ship_idle(ship_id)
@@ -145,7 +155,7 @@ class SimeisSDK:
 
         if cargo["resources"]["HullPlate"] < req:
             need = req - cargo["resources"]["HullPlate"]
-            return self.get(f"/market/{sta}/buy/hullplate/{need}")
+            return self.post(f"/market/{sta}/buy/hullplate/{need}")
         return None
 
     def repair_ship(self, sta, ship_id):
@@ -161,7 +171,7 @@ class SimeisSDK:
             cargo["resources"]["HullPlate"] = 0
 
         if cargo["resources"]["HullPlate"] > 0:
-            return self.get(f"/station/{sta}/repair/{ship_id}")
+            return self.post(f"/station/{sta}/repair/{ship_id}")
 
         return None
 
@@ -179,7 +189,7 @@ class SimeisSDK:
 
         if cargo["resources"]["Fuel"] < req:
             need = req - cargo["resources"]["Fuel"]
-            return self.get(f"/market/{sta}/buy/fuel/{need}")
+            return self.post(f"/market/{sta}/buy/fuel/{need}")
         return None
 
     def refuel_ship(self, sta, ship_id):
@@ -195,7 +205,7 @@ class SimeisSDK:
             cargo["resources"]["Fuel"] = 0        
 
         if cargo["resources"]["Fuel"] > 0:
-            return self.get(f"/station/{sta}/refuel/{ship_id}")
+            return self.post(f"/station/{sta}/refuel/{ship_id}")
         return None
 
     def scan_planets(self, sta):
@@ -206,7 +216,7 @@ class SimeisSDK:
         )
 
     def mine(self, ship_id):
-        return self.get(f"/ship/{ship_id}/extraction/start")
+        return self.post(f"/ship/{ship_id}/extraction/start")
 
     def return_station_and_unload(self, sta, ship_id):
         ship = self.get(f"/ship/{ship_id}")
@@ -220,7 +230,7 @@ class SimeisSDK:
             assert amnt > 0.0
             if amnt == 0.0:
                 continue
-            result.append(self.get(f"/ship/{ship_id}/unload/{sta}/{res}/{amnt}"))
+            result.append(self.post(f"/ship/{ship_id}/unload/{sta}/{res}/{amnt}"))
 
         return result
 
@@ -231,7 +241,7 @@ class SimeisSDK:
         return self.get("/market/prices")
 
     def sell_resource(self, sta, res, amnt):
-        return self.get(f"/market/{sta}/sell/{res}/{amnt}")
+        return self.post(f"/market/{sta}/sell/{res}/{amnt}")
 
     def buy_resource(self, sta, res, amnt):
-        return self.get(f"/market/{sta}/buy/{res}/{amnt}")
+        return self.post(f"/market/{sta}/buy/{res}/{amnt}")

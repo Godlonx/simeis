@@ -17,8 +17,11 @@ impl Game {
 
     pub fn gameloop(&self) -> Result<(), serde_json::Value> {
         let status = self.sdk.get_player_status()?;
-        let all_stations = json_get_dict("stations", &status).unwrap();
-        let station_id = all_stations.keys().nth(0).unwrap().parse().unwrap();
+        println!("{status:?}");
+        println!("{:?}", json_get_key("stations", &status));
+        println!("{:?}", json_get_list("stations", &status));
+        let all_stations = json_get_list("stations", &status).unwrap();
+        let station_id = all_stations.first().unwrap().as_u64().unwrap();
 
         // On a besoin de savoir quelle planète miner pour équiper notre vaisseau
         let all_planets = self.sdk.scan_planets(station_id)?;
