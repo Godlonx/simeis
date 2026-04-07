@@ -24,7 +24,7 @@ pub const STATION_INIT_CARGO: f64 = 1000.0;
 
 pub type StationId = u16;
 
-// TODO (#7) Add refineries to create fuel & hull plate from raw resources
+// TODO (#7) Add refineries to create fuel & hull from raw resources
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StationInfo {
     pub id: StationId,
@@ -276,14 +276,14 @@ impl Station {
             return Err(Errcode::ShipNotInStation);
         }
         let Some(pd) = self.player_data.clone_val(&ship.owner).await else {
-            return Err(Errcode::NoHullPlateInCargo);
+            return Err(Errcode::NoHullInCargo);
         };
         let mut pd = pd.write().await;
-        let Some(qty) = pd.cargo.resources.get(&Resource::HullPlate) else {
-            return Err(Errcode::NoHullPlateInCargo);
+        let Some(qty) = pd.cargo.resources.get(&Resource::Hull) else {
+            return Err(Errcode::NoHullInCargo);
         };
         if *qty == 0.0 {
-            return Err(Errcode::NoHullPlateInCargo);
+            return Err(Errcode::NoHullInCargo);
         }
         debug_assert!(ship.hull_resistance >= ship.hull_decay);
 
@@ -291,7 +291,7 @@ impl Station {
         if amnt == 0.0 {
             return Ok(0.0);
         }
-        let unloaded = pd.cargo.unload(&Resource::HullPlate, amnt);
+        let unloaded = pd.cargo.unload(&Resource::Hull, amnt);
         ship.hull_decay -= unloaded;
         debug_assert!(
             ship.hull_resistance >= ship.hull_decay,

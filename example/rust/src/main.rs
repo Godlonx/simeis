@@ -122,7 +122,7 @@ impl Game {
             let mut cycletot = 0.0;
             let station_resources = self.sdk.get_station_resources(station_id)?;
             for (res, amnt) in station_resources.iter() {
-                if ["Fuel", "HullPlate"].contains(&res.as_str()) {
+                if ["Fuel", "Hull"].contains(&res.as_str()) {
                     continue;
                 }
 
@@ -164,7 +164,7 @@ impl Game {
                     .as_f64()
                     .unwrap();
                 println!(
-                    "Bought {added} of HullPlate for {removed_money} credits (fees {} credits)",
+                    "Bought {added} of Hull for {removed_money} credits (fees {} credits)",
                     json_get_float("fees", &tx).unwrap(),
                 );
             }

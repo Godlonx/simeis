@@ -43,12 +43,12 @@ pub enum Resource {
 
     // Crafted
     Fuel,
-    HullPlate,
+    Hull,
 }
 
 impl Resource {
     pub fn scored(&self) -> bool {
-        matches!(self, Resource::Fuel | Resource::HullPlate)
+        matches!(self, Resource::Fuel | Resource::Hull)
     }
 
     // TODO (#12) Get from configuration file
@@ -61,7 +61,7 @@ impl Resource {
             Resource::Copper | Resource::Helium | Resource::Oil => 12.0 * base,
             Resource::Gold | Resource::Ozone | Resource::SulfuricAcid => 16.0 * base,
             Resource::Fuel => base / 2.0,
-            Resource::HullPlate => base / 3.0,
+            Resource::Hull => base / 3.0,
         }
     }
 
@@ -72,7 +72,7 @@ impl Resource {
             Resource::Copper | Resource::Helium | Resource::Oil => 3.0,
             Resource::Gold | Resource::Ozone | Resource::SulfuricAcid => 0.25,
             Resource::Fuel => 2.0,
-            Resource::HullPlate => 0.05,
+            Resource::Hull => 0.05,
         }
     }
 
@@ -101,7 +101,7 @@ impl Resource {
             Resource::Iron | Resource::Oxygen | Resource::Alcohol => 2,
             Resource::Copper | Resource::Helium | Resource::Oil => 4,
             Resource::Gold | Resource::Ozone | Resource::SulfuricAcid => 6,
-            Resource::Fuel | Resource::HullPlate => 0,
+            Resource::Fuel | Resource::Hull => 0,
         }
     }
 

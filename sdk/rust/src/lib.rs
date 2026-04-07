@@ -299,7 +299,7 @@ impl SimeisSDK {
         }
         Ok(())
     }
-    pub fn buy_plates_for_repair(
+    pub fn buy_hull_for_repair(
         &self,
         station_id: u64,
         ship_id: u64,
@@ -313,10 +313,10 @@ impl SimeisSDK {
         }
 
         let cargo = self.get_station_resources(station_id)?;
-        let amnt_got = cargo.get("HullPlate").cloned().unwrap_or(0.0);
+        let amnt_got = cargo.get("Hull").cloned().unwrap_or(0.0);
         if amnt_got < req {
             let need = req - amnt_got;
-            Ok(Some(self.buy_resource(station_id, "HullPlate", need)?))
+            Ok(Some(self.buy_resource(station_id, "Hull", need)?))
         } else {
             Ok(None)
         }
@@ -332,7 +332,7 @@ impl SimeisSDK {
         }
 
         let cargo = self.get_station_resources(station_id)?;
-        let amnt_got = cargo.get("HullPlate").cloned().unwrap_or(0.0);
+        let amnt_got = cargo.get("Hull").cloned().unwrap_or(0.0);
 
         if amnt_got > 0.0 {
             Ok(Some(

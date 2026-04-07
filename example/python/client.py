@@ -83,7 +83,7 @@ class Game:
             # On vends tout
             cycletot = 0
             for res, amnt in self.sdk.get_station_resources(sta).items():
-                if res in [ "Fuel", "HullPlate" ]:
+                if res in [ "Fuel", "Hull" ]:
                     continue
                 got = self.sdk.sell_resource(sta, res, amnt)
                 print("Sold", amnt, "of", res, "for", got["added_money"], "credits (fees", got["fees"], "credits)")
@@ -98,7 +98,7 @@ class Game:
             # On achète des plaques de coque, et on répare la coque
             got = self.sdk.buy_plates_for_repair(sta, ship["id"])
             cycletot -= got["removed_money"]
-            print("Bought", got["added_cargo"], "of HullPlate for", got["removed_money"], "credits (fees", got["fees"], "credits)")
+            print("Bought", got["added_cargo"], "of Hull for", got["removed_money"], "credits (fees", got["fees"], "credits)")
             self.sdk.repair_ship(sta, ship["id"])
 
             # Rebelotte

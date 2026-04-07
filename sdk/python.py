@@ -142,7 +142,7 @@ class SimeisSDK:
             time.sleep(ts)
             ship = self.get(f"/ship/{ship_id}")
 
-    def buy_plates_for_repair(self, sta, ship_id):
+    def buy_hull_for_repair(self, sta, ship_id):
         ship = self.get(f"/ship/{ship_id}")
         req = int(ship["hull_decay"])
         # Pas besoin
@@ -150,12 +150,12 @@ class SimeisSDK:
             return None
 
         cargo = self.get(f"/station/{sta}")["cargo"]
-        if "HullPlate" not in cargo["resources"]:
-            cargo["resources"]["HullPlate"] = 0
+        if "Hull" not in cargo["resources"]:
+            cargo["resources"]["Hull"] = 0
 
-        if cargo["resources"]["HullPlate"] < req:
-            need = req - cargo["resources"]["HullPlate"]
-            return self.post(f"/market/{sta}/buy/hullplate/{need}")
+        if cargo["resources"]["Hull"] < req:
+            need = req - cargo["resources"]["Hull"]
+            return self.post(f"/market/{sta}/buy/hull/{need}")
         return None
 
     def repair_ship(self, sta, ship_id):
@@ -167,10 +167,10 @@ class SimeisSDK:
             return None
 
         cargo = self.get(f"/station/{sta}")["cargo"]
-        if "HullPlate" not in cargo["resources"]:
-            cargo["resources"]["HullPlate"] = 0
+        if "Hull" not in cargo["resources"]:
+            cargo["resources"]["Hull"] = 0
 
-        if cargo["resources"]["HullPlate"] > 0:
+        if cargo["resources"]["Hull"] > 0:
             return self.post(f"/station/{sta}/repair/{ship_id}")
 
         return None
