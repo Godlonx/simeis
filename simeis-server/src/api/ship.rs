@@ -20,7 +20,7 @@ use simeis_data::ship::ShipId;
 use crate::api::build_response;
 use crate::api::GameState;
 
-#[web::get("/")]
+#[web::get("")]
 async fn get_ship_status(
     srv: GameState,
     id: Path<ShipId>,

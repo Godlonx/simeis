@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::time::Instant;
 
 use ntex::web;
+use ntex::web::types::Path;
 use ntex::web::HttpRequest;
 use ntex::web::ServiceConfig;
 
@@ -146,6 +147,7 @@ pub fn configure(srv: &mut ServiceConfig) {
     srv.service(tick_server).service(tick_server_n);
 
     srv.service(ping)
+        .service(get_syslogs)
         .service(get_version)
         .service(gamestats)
         .service(resources_info);

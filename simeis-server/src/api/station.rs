@@ -16,7 +16,7 @@ use crate::api::build_response;
 use crate::api::GameState;
 
 // Get status of a station
-#[web::get("/")]
+#[web::get("")]
 async fn get_station_status(
     srv: GameState,
     id: Path<StationId>,
@@ -33,7 +33,7 @@ async fn get_station_status(
 }
 
 // Scan for planets around the station
-#[web::get("/scan")]
+#[web::post("/scan")]
 async fn scan(id: Path<StationId>, srv: GameState, req: HttpRequest) -> impl web::Responder {
     let pkey = get_player_key!(req);
     let station_id = *id;
@@ -116,11 +116,11 @@ async fn repair_ship(
 }
 
 pub fn configure<T: IntoPattern>(base: T, srv: &mut ServiceConfig) {
-    crate::api::shipyard::configure("/shipyard", srv);
-    crate::api::crew::configure("/crew", srv);
-    crate::api::station_shop::configure("/shop", srv);
     srv.service(
         scope(base)
+            .configure(|srv| crate::api::shipyard::configure("/shipyard", srv))
+            .configure(|srv| crate::api::crew::configure("/crew", srv))
+            .configure(|srv| crate::api::station_shop::configure("/shop", srv))
             .service(scan)
             .service(get_station_status)
             .service(get_station_upgrades)
