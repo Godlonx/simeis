@@ -1,0 +1,109 @@
+use std::collections::BTreeMap;
+
+use ntex::router::IntoPattern;
+use ntex::web;
+use ntex::web::scope;
+use ntex::web::types::Path;
+use ntex::web::HttpRequest;
+use ntex::web::ServiceConfig;
+
+use serde_json::json;
+use serde_json::to_value;
+
+use simeis_data::errors::Errcode;
+use simeis_data::galaxy::station::StationId;
+use simeis_data::industry::IndustryUnitId;
+use simeis_data::industry::IndustryUnitType;
+use strum::IntoEnumIterator;
+
+use crate::api::build_response;
+use crate::api::GameState;
+
+// Buy a new industry unit
+#[web::get("/buy/list")]
+async fn list_buy_industry(args: Path<StationId>, srv: GameState, req: HttpRequest) -> impl web::Responder {
+    let pkey = get_player_key!(req);
+    let station_id = args.clone();
+
+    let data = srv.map_player(&pkey, |player| Box::pin(async move {
+        let Some(_station) = player.stations.get(&station_id).cloned() else {
+            return Err(Errcode::NoSuchStation(station_id));
+        };
+        let mut res: BTreeMap<IndustryUnitType, f64> = BTreeMap::new();
+        for unit in IndustryUnitType::iter() {
+            let price = unit.get_price_buy();
+            res.insert(unit, price);
+        }
+        Ok(to_value(res).unwrap())
+    })).await;
+    build_response(data)
+}
+
+// Buy a new industry unit
+#[web::post("/buy/{indutype}")]
+async fn buy_industry(args: Path<(StationId, IndustryUnitType)>, srv: GameState, req: HttpRequest) -> impl web::Responder {
+    let pkey = get_player_key!(req);
+    let (station_id, indutype) = args.clone();
+
+    let data = srv.map_player_mut(&pkey, |player| Box::pin(async move {
+        let Some(station) = player.stations.get(&station_id).cloned() else {
+            return Err(Errcode::NoSuchStation(station_id));
+        };
+        let (id, cost) = station.buy_industry(player, indutype).await?;
+        Ok(json!({ "id": id, "cost": cost }))
+    })).await;
+    build_response(data)
+}
+
+// Upgrade an industry unit
+#[web::post("/upgrade/{id}")]
+async fn upgrade_industry(args: Path<(StationId, IndustryUnitId)>, srv: GameState, req: HttpRequest) -> impl web::Responder {
+    let pkey = get_player_key!(req);
+    let (station_id, id) = args.clone();
+
+    let data = srv.map_player_mut(&pkey, |player| Box::pin(async move {
+        let Some(station) = player.stations.get(&station_id).cloned() else {
+            return Err(Errcode::NoSuchStation(station_id));
+        };
+        let newrank = station.upgrade_industry(player, &id).await?;
+        Ok(json!({ "new-rank": newrank }))
+    })).await;
+    build_response(data)
+}
+
+// Upgrade an industry unit
+#[web::post("/start/{id}")]
+async fn start_industry(args: Path<(StationId, IndustryUnitId)>, srv: GameState, req: HttpRequest) -> impl web::Responder {
+    let pkey = get_player_key!(req);
+    let (station_id, id) = args.clone();
+
+    let data = srv.map_station(&pkey, &station_id, |pid, station| Box::pin(async move {
+        let produced = station.start_industry(pid, &id).await?;
+        Ok(to_value(produced).unwrap())
+    })).await;
+    build_response(data)
+}
+
+// Upgrade an industry unit
+#[web::post("/stop/{id}")]
+async fn stop_industry(args: Path<(StationId, IndustryUnitId)>, srv: GameState, req: HttpRequest) -> impl web::Responder {
+    let pkey = get_player_key!(req);
+    let (station_id, id) = args.clone();
+
+    let data = srv.map_station(&pkey, &station_id, |pid, station| Box::pin(async move {
+        let produced = station.stop_industry(pid, &id).await?;
+        Ok(to_value(produced).unwrap())
+    })).await;
+    build_response(data)
+}
+
+pub fn configure<T: IntoPattern>(base: T, srv: &mut ServiceConfig) {
+    srv.service(
+        scope(base)
+            .service(list_buy_industry)
+            .service(buy_industry)
+            .service(upgrade_industry)
+            .service(start_industry)
+            .service(stop_industry)
+    );
+}

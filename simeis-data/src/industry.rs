@@ -70,6 +70,7 @@ impl IndustryUnitType {
             operator: None,
             unittype: self,
             rank: 1,
+            started: false,
             resources_required: vec![],
             resources_created: vec![],
         }
@@ -87,6 +88,7 @@ pub struct IndustryUnit {
     pub id: IndustryUnitId,
     pub unittype: IndustryUnitType,
     pub rank: u8,
+    pub started: bool,
 
     operator: Option<CrewId>,
     resources_required: Vec<(Resource, f64)>,
@@ -185,6 +187,9 @@ impl IndustryUnit {
     }
 
     pub fn can_work(&self, tdelta: &f64, resources: &BTreeMap<Resource, f64>) -> bool {
+        if !self.started {
+            return false;
+        }
         if self.operator.is_none() {
             return false;
         }
@@ -200,6 +205,8 @@ impl IndustryUnit {
     }
 
     pub fn work(&self, tdelta: &f64, resources: &mut BTreeMap<Resource, f64>) {
+        debug_assert!(self.started);
+        debug_assert!(self.operator.is_some());
         for (res, amnt) in self.resources_required.iter() {
             let n = resources.get_mut(res).unwrap();
             *n -= amnt * tdelta;

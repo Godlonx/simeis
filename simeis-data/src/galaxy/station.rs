@@ -106,6 +106,7 @@ impl Station {
         if player.money < cost {
             return Err(Errcode::NotEnoughMoney(player.money, cost));
         }
+        self.ensure_has_player_data(&player.id).await;
         let pd = self.player_data.clone_val(&player.id).await.unwrap();
         let mut pd = pd.write().await;
         let unit = unit.new_unit();
@@ -113,6 +114,44 @@ impl Station {
         pd.industry.insert(unit_id, unit);
         player.money -= cost;
         Ok((unit_id, cost))
+    }
+
+    pub async fn upgrade_industry(&self, player: &mut Player, id: &IndustryUnitId) -> Result<u8, Errcode> {
+        self.ensure_has_player_data(&player.id).await;
+        let pd = self.player_data.clone_val(&player.id).await.unwrap();
+        let mut pd = pd.write().await;
+        let Some(unit) = pd.industry.get_mut(id) else {
+            return Err(Errcode::NoSuchIndustryUnit);
+        };
+        let cost = unit.price_next_rank();
+        if cost > player.money {
+            return Err(Errcode::NotEnoughMoney(player.money, cost));
+        }
+        player.money -= cost;
+        unit.rank += 1;
+        Ok(unit.rank)
+    }
+
+    pub async fn start_industry(&self, player: &PlayerId, id: &IndustryUnitId) -> Result<(), Errcode> {
+        self.ensure_has_player_data(&player).await;
+        let pd = self.player_data.clone_val(player).await.unwrap();
+        let mut pd = pd.write().await;
+        let Some(unit) = pd.industry.get_mut(id) else {
+            return Err(Errcode::NoSuchIndustryUnit);
+        };
+        unit.started = true;
+        Ok(())
+    }
+
+    pub async fn stop_industry(&self, player: &PlayerId, id: &IndustryUnitId) -> Result<(), Errcode> {
+        self.ensure_has_player_data(&player).await;
+        let pd = self.player_data.clone_val(player).await.unwrap();
+        let mut pd = pd.write().await;
+        let Some(unit) = pd.industry.get_mut(id) else {
+            return Err(Errcode::NoSuchIndustryUnit);
+        };
+        unit.started = false;
+        Ok(())
     }
 
     pub async fn buy_cargo(&self, player: &mut Player, amnt: &usize) -> Result<ShipCargo, Errcode> {

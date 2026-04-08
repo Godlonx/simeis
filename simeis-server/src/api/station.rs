@@ -121,6 +121,7 @@ pub fn configure<T: IntoPattern>(base: T, srv: &mut ServiceConfig) {
             .configure(|srv| crate::api::shipyard::configure("/shipyard", srv))
             .configure(|srv| crate::api::crew::configure("/crew", srv))
             .configure(|srv| crate::api::station_shop::configure("/shop", srv))
+            .configure(|srv| crate::api::industry::configure("/industry", srv))
             .service(scan)
             .service(get_station_status)
             .service(get_station_upgrades)

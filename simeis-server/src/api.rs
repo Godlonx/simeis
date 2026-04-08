@@ -69,6 +69,7 @@ mod system;
 mod crew;
 mod shipyard;
 mod station_shop;
+mod industry;
 
 // TODO (#35) Requires POST body implementation first
 // TODO (#36) Endpoints for all kinds of information
