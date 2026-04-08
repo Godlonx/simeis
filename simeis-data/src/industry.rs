@@ -99,15 +99,18 @@ impl IndustryUnit {
         self.unittype.get_price_buy().powf(num / UNIT_UPG_POWF_DIV)
     }
 
+    #[inline]
     pub fn need_crew_member(&self, ctype: &CrewMemberType) -> bool {
         ctype == &CrewMemberType::Operator && self.operator.is_none()
     }
 
+    #[inline]
     pub fn assign_operator(&mut self, opid: CrewId, op: &CrewMember) {
         self.operator = Some(opid);
         self.new_op_rank(op.rank);
     }
 
+    #[inline]
     pub fn new_op_rank(&mut self, rank: u8) {
         self.resources_required = self.input(rank);
         self.resources_created = self.output(rank);
@@ -117,32 +120,41 @@ impl IndustryUnit {
     fn input(&self, oprank: u8) -> Vec<(Resource, f64)> {
         debug_assert_ne!(oprank, 1);
         let div = 1.0 / (std::f64::consts::E + (oprank as f64) - 1.0).ln();
-
-        let sbase = SBASE_REQ;
-        let abase = ABASE_REQ;
         match self.unittype {
-            IndustryUnitType::SimpleFuelRefinery => vec![
-                (Resource::Hydrogen, sbase),      // Gas 1
-                (Resource::Oxygen, sbase * 0.2),  // Gas 2
-                (Resource::Carbon, sbase * 1.25), // Solid 1
-                (Resource::Water, sbase * 0.4),   // Liquid 1
-            ],
-            IndustryUnitType::SimpleHullFoundry => vec![
-                (Resource::Carbon, sbase),           // Solid 1
-                (Resource::Iron, sbase * 0.2),       // Solid 2
-                (Resource::Hydrogen, sbase * 1.25),  // Gas 1
-                (Resource::Water, 0.5 * 0.4),        // Liquid 1
-            ],
-            IndustryUnitType::AdvancedFuelRefinery => vec![
-                (Resource::Carbon, abase),       // Solid 1
-                (Resource::Oil, abase * 0.4),    // Liquid 3
-                (Resource::Helium, abase * 0.2), // Gas 3
-            ],
-            IndustryUnitType::AdvancedHullFoundry => vec![
-                (Resource::Hydrogen, abase),     // Gas 1
-                (Resource::Copper, abase * 0.4), // Solid 3
-                (Resource::Oil, abase * 0.2),    // Liquid 3
-            ],
+            IndustryUnitType::SimpleFuelRefinery => {
+                let sbase = SBASE_REQ * (self.rank as f64);
+                vec![
+                    (Resource::Hydrogen, sbase),      // Gas 1
+                    (Resource::Oxygen, sbase * 0.2),  // Gas 2
+                    (Resource::Carbon, sbase * 1.25), // Solid 1
+                    (Resource::Water, sbase * 0.4),   // Liquid 1
+                ]
+            },
+            IndustryUnitType::SimpleHullFoundry => {
+                let sbase = SBASE_REQ * (self.rank as f64);
+                vec![
+                    (Resource::Carbon, sbase),           // Solid 1
+                    (Resource::Iron, sbase * 0.2),       // Solid 2
+                    (Resource::Hydrogen, sbase * 1.25),  // Gas 1
+                    (Resource::Water, 0.5 * 0.4),        // Liquid 1
+                ]
+            },
+            IndustryUnitType::AdvancedFuelRefinery => {
+                let abase = ABASE_REQ * (self.rank as f64);
+                vec![
+                    (Resource::Carbon, abase),       // Solid 1
+                    (Resource::Oil, abase * 0.4),    // Liquid 3
+                    (Resource::Helium, abase * 0.2), // Gas 3
+                ]
+            },
+            IndustryUnitType::AdvancedHullFoundry => {
+                let abase = ABASE_REQ * (self.rank as f64);
+                vec![
+                    (Resource::Hydrogen, abase),     // Gas 1
+                    (Resource::Copper, abase * 0.4), // Solid 3
+                    (Resource::Oil, abase * 0.2),    // Liquid 3
+                ]
+            }
         }
         .into_iter()
         .map(|(res, amnt)| {
@@ -157,13 +169,11 @@ impl IndustryUnit {
         debug_assert_ne!(oprank, 1);
         let pown = (oprank as f64).ln();
 
-        let sbase = get_sbase_produce_base();
-        let abase = get_abase_produce_base();
         match self.unittype {
-            IndustryUnitType::SimpleFuelRefinery => vec![(Resource::Fuel, sbase)],
-            IndustryUnitType::SimpleHullFoundry => vec![(Resource::Hull, sbase)],
-            IndustryUnitType::AdvancedFuelRefinery => vec![(Resource::Fuel, abase)],
-            IndustryUnitType::AdvancedHullFoundry => vec![(Resource::Hull, abase)],
+            IndustryUnitType::SimpleFuelRefinery => vec![(Resource::Fuel, get_sbase_produce_base() * (self.rank as f64))],
+            IndustryUnitType::SimpleHullFoundry => vec![(Resource::Hull, get_sbase_produce_base() * (self.rank as f64))],
+            IndustryUnitType::AdvancedFuelRefinery => vec![(Resource::Fuel, get_abase_produce_base() * (self.rank as f64))],
+            IndustryUnitType::AdvancedHullFoundry => vec![(Resource::Hull, get_abase_produce_base() * (self.rank as f64))],
         }
         .into_iter()
         .map(|(res, amnt)| {
