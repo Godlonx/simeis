@@ -1,4 +1,27 @@
 { pkgs, deps }: {
+  prepare_class = let
+    app = pkgs.writeShellApplication {
+      name = "prepare-class";
+      runtimeInputs = [];
+      text = ''
+        if ! [ -z "$(git diff)" ]; then
+          echo "Staging changes, commit then execute again"
+          exit 1
+        fi
+
+        git checkout -B class
+        rm -rf .forgejo
+        rm flake.*
+        rm economy.ods
+        rm example/bigtest.sh
+        rm -rf .swagger
+        git add .
+        git commit -m "Preparing project for class"
+        git push -f -u origin class
+      '';
+    };
+  in "${app}/bin/prepare-class";
+
   unit_tests = let
     app = pkgs.writeShellApplication {
       name = "unit-tests";
