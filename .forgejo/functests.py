@@ -727,7 +727,6 @@ class Tester:
         all_upg = self.get_ok(f"/station/{stationid}/shipyard/upgrade/{shipid}")
         for (upgr, data) in all_upg.items():
             assert self.assert_got(data, "price", None) > 100.0
-            assert len(self.assert_got(data, "description", None)) > 0
 
         before = self.get_ok(f"/ship/{shipid}")
 

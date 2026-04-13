@@ -20,7 +20,8 @@ use strum::IntoEnumIterator;
 use crate::api::build_response;
 use crate::api::GameState;
 
-// Buy a new industry unit
+// @summary List all the industry units available to buy on the station
+// @returns The price for each unit
 #[web::get("/buy")]
 async fn list_buy_industry(
     args: Path<StationId>,
@@ -48,7 +49,8 @@ async fn list_buy_industry(
     build_response(data)
 }
 
-// Buy a new industry unit
+// @summary Buy a new industry unit
+// @returns The ID of the unit bought, and the cost of the transaction
 #[web::post("/buy/{name}")]
 async fn buy_industry(
     args: Path<(StationId, String)>,
@@ -75,7 +77,8 @@ async fn buy_industry(
     build_response(data)
 }
 
-// Upgrade an industry unit
+// @summary Upgrade an industry unit
+// @returns The new rank of the industry unit
 #[web::post("/upgrade/{id}")]
 async fn upgrade_industry(
     args: Path<(StationId, IndustryUnitId)>,
@@ -99,7 +102,9 @@ async fn upgrade_industry(
     build_response(data)
 }
 
-// Upgrade an industry unit
+// @summary Start an industry unit
+// @returns Nothing
+// Unless started, an industry unit will NOT produce anything
 #[web::post("/start/{id}")]
 async fn start_industry(
     args: Path<(StationId, IndustryUnitId)>,
@@ -120,7 +125,8 @@ async fn start_industry(
     build_response(data)
 }
 
-// Upgrade an industry unit
+// @summary Stop an industry unit
+// @returns Nothing
 #[web::post("/stop/{id}")]
 async fn stop_industry(
     args: Path<(StationId, IndustryUnitId)>,
@@ -141,7 +147,8 @@ async fn stop_industry(
     build_response(data)
 }
 
-// Shows the production inputs & outputs of a particular unit
+// @summary Shows the production inputs & outputs of a particular unit
+// @returns The resources needed in input of the unit, and the one produced in the output
 #[web::get("/production/{id}")]
 async fn show_production(
     args: Path<(StationId, IndustryUnitId)>,

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::time::Instant;
 
 use ntex::web;
-use ntex::web::HttpRequest;
+use ntex::web::{HttpRequest, HttpResponse};
 use ntex::web::ServiceConfig;
 
 use serde_json::json;
@@ -16,7 +16,21 @@ use simeis_data::ship::resources::Resource;
 use crate::api::build_response;
 use crate::api::GameState;
 
-// TODO     /    Serves the HTML page with the swagger
+// @noswagger
+#[web::get("/")]
+async fn swagger_ui() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(include_str!("../../../doc/swagger-ui.html"))
+}
+
+// @noswagger
+#[web::get("/swagger.json")]
+async fn swagger_json() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(include_str!("../../../doc/swagger.json"))
+}
 
 // @summary Test the connection to the server
 // @returns The messasge "pong"
@@ -159,6 +173,8 @@ pub fn configure(srv: &mut ServiceConfig) {
     srv.service(tick_server).service(tick_server_n);
 
     srv.service(ping)
+        .service(swagger_json)
+        .service(swagger_ui)
         .service(get_syslogs)
         .service(get_version)
         .service(gamestats)

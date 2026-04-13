@@ -17,9 +17,10 @@
       runtimeInputs = deps ++ [ python ];
       text = ''
         export CARGO_HOME=$PWD/.cargohome
-        cargo build --features testing
+        mkdir -p target
+        cargo build --target-dir ./target/functests/ --features testing
         rm -f /tmp/simeis_logs
-        ./target/debug/simeis-server 1>/tmp/simeis_logs 2>&1 &
+        ./target/functests/debug/simeis-server 1>/tmp/simeis_logs 2>&1 &
         sleep 1
 
         if [ -z "$(jobs -r)" ]; then
@@ -125,9 +126,10 @@
         runtimeInputs = [ pkgs.ripgrep ];
         text = ''
           export CARGO_HOME=$PWD/.cargohome
-          cargo build --features testing
+          mkdir -p target
+          cargo build --target-dir ./target/apisanity/ --features testing
           rm -f /tmp/simeis_logs
-          ./target/debug/simeis-server 1>/tmp/simeis_logs 2>&1 &
+          ./target/apisanity/debug/simeis-server 1>/tmp/simeis_logs 2>&1 &
           sleep 1
           if [ -z "$(jobs -r)" ]; then
             echo "!!! Failed to start the server";

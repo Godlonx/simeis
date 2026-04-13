@@ -131,7 +131,13 @@ class ApiChecker:
 
         self.crawl_for_method("get", name, code, "/".join(paths))
         self.crawl_for_method("post", name, code, "/".join(paths))
-        # TODO Check if ".configure" in code, then get to nested API
+
+        for line in code:
+            line = line.lstrip()
+            if line.startswith(".configure(|srv|"):
+                name = line.split("::configure(\"")[0].split("::")[-1]
+                path = line.split("::configure(\"")[1].split("\"")[0].lstrip("/")
+                self.crawl_section(name, paths + [ path ])
 
     def crawl_for_method(self, method, tag, code, rootpath):
         while True:
@@ -143,10 +149,14 @@ class ApiChecker:
             all_params = get_url_params(path)
             name = code[nline+1].split("(")[0].split(" ")[-1]
             print("Found {} {} API {} at line {}".format(method.upper(), path, name, nline))
-            check_all_metadata(f"{method}_{name}", mdata)
+            check_all_metadata(f"{method.upper()}:{name}", mdata)
             data = {
                 "description": doc,
-                "responses": { "200": mdata.pop("returns") },
+                "responses": {
+                    "200": {
+                        "description": mdata.pop("returns"),
+                    },
+                },
                 "tags": [ tag ],
                 "parameters": [{
                     "name": n,
@@ -212,14 +222,3 @@ checker.check_python_sdk()
 checker.check_func_tests()
 checker.generate_swagger(os.path.join(proj, "doc/swagger.json"))
 checker.generate_html_file(proj, os.path.join(proj, "doc/swagger-ui.html"))
-
-# TODO Add sections in the swagger
-# https://swagger.io/docs/specification/v3_0/grouping-operations-with-tags/ 
-# TODO Do the "new player" api first
-    # TODO Check if pattern requires a player id, ship id, station id
-    #     If not ready yet, do others and then loop back to them
-    # TODO Fill the swagger
-    # TODO Call the API to generate an example
-
-# TODO Generate a full HTML page with the whole swagger-ui + swagger.json data directly in it
-# (No need to serve other web resources)

@@ -11,7 +11,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "The messasge \"pong\""
+          "200": {
+            "description": "The messasge \"pong\""
+          }
         },
         "tags": [
           "system"
@@ -24,7 +26,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "The list of events that occured for this player on the server"
+          "200": {
+            "description": "The list of events that occured for this player on the server"
+          }
         },
         "tags": [
           "system"
@@ -37,7 +41,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "the version of the game"
+          "200": {
+            "description": "the version of the game"
+          }
         },
         "tags": [
           "system"
@@ -50,7 +56,9 @@
       "get": {
         "description": "Informations returned:\n- Volume in cargo\n- Base market price\n- If extractable, its difficulty\n- If extractable, the minimum rank of the operator required",
         "responses": {
-          "200": "For each resource, returns basic informations"
+          "200": {
+            "description": "For each resource, returns basic informations"
+          }
         },
         "tags": [
           "system"
@@ -63,7 +71,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "The game statistics for each player currently in the game"
+          "200": {
+            "description": "The game statistics for each player currently in the game"
+          }
         },
         "tags": [
           "system"
@@ -76,7 +86,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "The price for each resource"
+          "200": {
+            "description": "The price for each resource"
+          }
         },
         "tags": [
           "market"
@@ -89,7 +101,9 @@
       "get": {
         "description": "Depends on the level of the trader",
         "responses": {
-          "200": "The fee rate"
+          "200": {
+            "description": "The fee rate"
+          }
         },
         "tags": [
           "market"
@@ -108,7 +122,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "How much was added to the cargo, how much money was removed, and the amount of fees"
+          "200": {
+            "description": "How much was added to the cargo, how much money was removed, and the amount of fees"
+          }
         },
         "tags": [
           "market"
@@ -137,7 +153,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "How much was removed from the cargo, how much money was added, and the amount of fees"
+          "200": {
+            "description": "How much was removed from the cargo, how much money was added, and the amount of fees"
+          }
         },
         "tags": [
           "market"
@@ -166,7 +184,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "Information about the player, complete if it's you, minimal if it's another player"
+          "200": {
+            "description": "Information about the player, complete if it's you, minimal if it's another player"
+          }
         },
         "tags": [
           "player"
@@ -185,7 +205,9 @@
       "post": {
         "description": "The secret key must be used in the \"Simeis-Key\" HTTP header",
         "responses": {
-          "200": "The ID of the player, and its authentication secret key"
+          "200": {
+            "description": "The ID of the player, and its authentication secret key"
+          }
         },
         "tags": [
           "player"
@@ -204,7 +226,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "The data for the ship"
+          "200": {
+            "description": "The data for the ship"
+          }
         },
         "tags": [
           "ship"
@@ -223,7 +247,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "The amount of credits consumed each second by the crew of this ship"
+          "200": {
+            "description": "The amount of credits consumed each second by the crew of this ship"
+          }
         },
         "tags": [
           "ship"
@@ -242,7 +268,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "Travel informations on this destination"
+          "200": {
+            "description": "Travel informations on this destination"
+          }
         },
         "tags": [
           "ship"
@@ -276,7 +304,9 @@
       "post": {
         "description": "Ship will have the state InFlight during the travel",
         "responses": {
-          "200": "Travel informations on the destination"
+          "200": {
+            "description": "Travel informations on the destination"
+          }
         },
         "tags": [
           "ship"
@@ -310,7 +340,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "The position where the ship has stopped"
+          "200": {
+            "description": "The position where the ship has stopped"
+          }
         },
         "tags": [
           "ship"
@@ -329,7 +361,9 @@
       "post": {
         "description": "Ship will have the state \"Extracting\" until its cargo is full",
         "responses": {
-          "200": "The rate at which every resources are mined, and the time necessary to fill the cargo"
+          "200": {
+            "description": "The rate at which every resources are mined, and the time necessary to fill the cargo"
+          }
         },
         "tags": [
           "ship"
@@ -348,7 +382,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "Nothing"
+          "200": {
+            "description": "Nothing"
+          }
         },
         "tags": [
           "ship"
@@ -367,7 +403,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "How much of each resource were unloaded, and if the ship cargo is empty or not"
+          "200": {
+            "description": "How much of each resource were unloaded, and if the ship cargo is empty or not"
+          }
         },
         "tags": [
           "ship"
@@ -391,7 +429,9 @@
       "post": {
         "description": "Depending on the cargo space available on the station, may not unload anything",
         "responses": {
-          "200": "How much of this resource was effectively unloaded from the ship"
+          "200": {
+            "description": "How much of this resource was effectively unloaded from the ship"
+          }
         },
         "tags": [
           "ship"
@@ -425,7 +465,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "All the informations for the player on this station"
+          "200": {
+            "description": "All the informations for the player on this station"
+          }
         },
         "tags": [
           "station"
@@ -444,7 +486,9 @@
       "get": {
         "description": "",
         "responses": {
-          "200": "List of the upgrades available, and their price"
+          "200": {
+            "description": "List of the upgrades available, and their price"
+          }
         },
         "tags": [
           "station"
@@ -463,7 +507,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "Scan information on all the stellar objects around this station"
+          "200": {
+            "description": "Scan information on all the stellar objects around this station"
+          }
         },
         "tags": [
           "station"
@@ -482,7 +528,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "How much fuel was effectively added to the ship (and removed from the station cargo)"
+          "200": {
+            "description": "How much fuel was effectively added to the ship (and removed from the station cargo)"
+          }
         },
         "tags": [
           "station"
@@ -506,7 +554,9 @@
       "post": {
         "description": "",
         "responses": {
-          "200": "How much hull was effectively used to repair the ship (and removed from the station cargo)"
+          "200": {
+            "description": "How much hull was effectively used to repair the ship (and removed from the station cargo)"
+          }
         },
         "tags": [
           "station"
@@ -524,6 +574,629 @@
           }
         ],
         "summary": "Use the hull plates in storage on the station to repair the ship"
+      }
+    },
+    "/station/{station_id}/shipyard/list": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "For each ship, its statistics, and price"
+          }
+        },
+        "tags": [
+          "shipyard"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "List all the ships available for buying"
+      }
+    },
+    "/station/{station_id}/shipyard/upgrade/{ship_id}": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The price of every upgrade available"
+          }
+        },
+        "tags": [
+          "shipyard"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "ship_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "List all upgrades available for buying on a specific ship, on the station"
+      }
+    },
+    "/station/{station_id}/shipyard/buy/{id}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The ID of the ship you just bought"
+          }
+        },
+        "tags": [
+          "shipyard"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Buy a ship from the station's shop"
+      }
+    },
+    "/station/{station_id}/shipyard/upgrade/{ship_id}/{upgrade_type}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The cost of the upgrade"
+          }
+        },
+        "tags": [
+          "shipyard"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "ship_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "upgrade_type",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Buy an upgrade and install it on a ship"
+      }
+    },
+    "/station/{station_id}/crew/upgrade/ship/{ship_id}": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "For each member, his type, rank, and price for next rank"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "ship_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "List all the upgrades available for the crew of a specific ship"
+      }
+    },
+    "/station/{station_id}/crew/hire/{crewtype}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The ID of the hired crew member"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "crewtype",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Hire a new crew member on the station. Unless assigned, it will stay idle"
+      }
+    },
+    "/station/{station_id}/crew/upgrade/ship/{ship_id}/{crew_id}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "New rank, and cost of the upgrade"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "ship_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "crew_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Upgrade a crew member of a specific ship"
+      }
+    },
+    "/station/{station_id}/crew/upgrade/{crew_id}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "New rank, and cost of the upgrade"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "crew_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Upgrade a crew member of the station"
+      }
+    },
+    "/station/{station_id}/crew/assign/{crewid}/trading": {
+      "post": {
+        "description": "The level of the trader will affect the fee rate applied on the market",
+        "responses": {
+          "200": {
+            "description": "Nothing"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "crewid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Assign a crew member as a trader on a station."
+      }
+    },
+    "/station/{station_id}/crew/assign/{crewid}/ship/{shipid}/pilot": {
+      "post": {
+        "description": "The level of the pilot will affect the speed of the ship, as well as it's fuel consumption",
+        "responses": {
+          "200": {
+            "description": "Nothing"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "crewid",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "shipid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Assign a crew member as a pilot on a ship."
+      }
+    },
+    "/station/{station_id}/crew/assign/{crewid}/ship/{shipid}/{modid}": {
+      "post": {
+        "description": "The level of the crew member will affect the extraction rate of the resources",
+        "responses": {
+          "200": {
+            "description": "Nothing"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "crewid",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "shipid",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "modid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Assign a crew member as an operator on a ship."
+      }
+    },
+    "/station/{station_id}/crew/assign/{crewid}/industry/{iid}": {
+      "post": {
+        "description": "The level of the crew member will affect the production rate",
+        "responses": {
+          "200": {
+            "description": "Nothing"
+          }
+        },
+        "tags": [
+          "crew"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "crewid",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "iid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Assign a crew member as an operator on an industry unit of a sttion."
+      }
+    },
+    "/station/{station_id}/shop/modules": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "For each module, its price"
+          }
+        },
+        "tags": [
+          "station_shop"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "List all the modules available to buy on the station"
+      }
+    },
+    "/station/{station_id}/shop/modules/{ship_id}/upgrade": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "For each module, the type of module, and price of the next upgrade"
+          }
+        },
+        "tags": [
+          "station_shop"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "ship_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "List the available upgrades for a module on a ship"
+      }
+    },
+    "/station/{station_id}/shop/modules/{ship_id}/buy/{modtype}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The ID of the module, and the cost of the operation"
+          }
+        },
+        "tags": [
+          "station_shop"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "ship_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "modtype",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Buy a ship module and install it on a ship"
+      }
+    },
+    "/station/{station_id}/shop/modules/{ship_id}/upgrade/{modid}": {
+      "post": {
+        "description": "The level of a module will affect the extraction rate for a resource, as well as what kind of resources it kind mine.",
+        "responses": {
+          "200": {
+            "description": "The new rank of the module, and the cost of the upgrade"
+          }
+        },
+        "tags": [
+          "station_shop"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "ship_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "modid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Buy an upgrade for a module installed on a ship"
+      }
+    },
+    "/station/{station_id}/shop/cargo/buy/{amount}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The cargo of the station"
+          }
+        },
+        "tags": [
+          "station_shop"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "amount",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Buy a storage expansion for the station"
+      }
+    },
+    "/station/{station_id}/industry/buy": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The price for each unit"
+          }
+        },
+        "tags": [
+          "industry"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "List all the industry units available to buy on the station"
+      }
+    },
+    "/station/{station_id}/industry/production/{id}": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The resources needed in input of the unit, and the one produced in the output"
+          }
+        },
+        "tags": [
+          "industry"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Shows the production inputs & outputs of a particular unit"
+      }
+    },
+    "/station/{station_id}/industry/buy/{name}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The ID of the unit bought, and the cost of the transaction"
+          }
+        },
+        "tags": [
+          "industry"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Buy a new industry unit"
+      }
+    },
+    "/station/{station_id}/industry/upgrade/{id}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "The new rank of the industry unit"
+          }
+        },
+        "tags": [
+          "industry"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Upgrade an industry unit"
+      }
+    },
+    "/station/{station_id}/industry/start/{id}": {
+      "post": {
+        "description": "Unless started, an industry unit will NOT produce anything",
+        "responses": {
+          "200": {
+            "description": "Nothing"
+          }
+        },
+        "tags": [
+          "industry"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Start an industry unit"
+      }
+    },
+    "/station/{station_id}/industry/stop/{id}": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Nothing"
+          }
+        },
+        "tags": [
+          "industry"
+        ],
+        "parameters": [
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "summary": "Stop an industry unit"
       }
     }
   }
