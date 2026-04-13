@@ -72,6 +72,7 @@
       ".git"
       ".forgejo/scripts.nix"
       ".forgejo/workflows"
+      ".swagger"
       "TODO.md"
     ];
 
