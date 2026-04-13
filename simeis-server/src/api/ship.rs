@@ -48,9 +48,7 @@ async fn get_wages_cost(
 
     let data = srv
         .map_ship(&pkey, &ship_id, |_, ship| {
-            Box::pin(async move {
-                Ok(json!({ "wages": ship.crew.sum_wages() }))
-            })
+            Box::pin(async move { Ok(json!({ "wages": ship.crew.sum_wages() })) })
         })
         .await;
     build_response(data)

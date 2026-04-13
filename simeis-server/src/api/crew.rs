@@ -224,12 +224,14 @@ async fn assign_operator_to_industry(
     let pkey = get_player_key!(req);
 
     let data = srv
-        .map_station(&pkey, &station_id, |pid, station| Box::pin(async move {
-            station
-                .assign_crew_to_industry(pid, &crew_id, &industry_id)
-                .await
-                .map(|_| json!({}))
-        }))
+        .map_station(&pkey, &station_id, |pid, station| {
+            Box::pin(async move {
+                station
+                    .assign_crew_to_industry(pid, &crew_id, &industry_id)
+                    .await
+                    .map(|_| json!({}))
+            })
+        })
         .await;
     build_response(data)
 }
@@ -244,6 +246,6 @@ pub fn configure<T: IntoPattern>(base: T, srv: &mut ServiceConfig) {
             .service(assign_pilot)
             .service(assign_operator_to_industry)
             .service(assign_operator_to_ship)
-            .service(assign_trader)
+            .service(assign_trader),
     );
 }

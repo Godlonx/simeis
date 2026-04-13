@@ -151,15 +151,17 @@ async fn show_production(
     let pkey = get_player_key!(req);
     let (station_id, id) = *args;
 
-    let data = srv.map_station(&pkey, &station_id, |pid, station| {
-        Box::pin(async move {
-            let (inputs, outputs) = station.get_industry_production(pid, id).await?;
-            Ok(json!({
-                "inputs": to_value(inputs).unwrap(),
-                "outputs": to_value(outputs).unwrap(),
-            }))
+    let data = srv
+        .map_station(&pkey, &station_id, |pid, station| {
+            Box::pin(async move {
+                let (inputs, outputs) = station.get_industry_production(pid, id).await?;
+                Ok(json!({
+                    "inputs": to_value(inputs).unwrap(),
+                    "outputs": to_value(outputs).unwrap(),
+                }))
+            })
         })
-    }).await;
+        .await;
 
     build_response(data)
 }
@@ -172,6 +174,6 @@ pub fn configure<T: IntoPattern>(base: T, srv: &mut ServiceConfig) {
             .service(upgrade_industry)
             .service(show_production)
             .service(start_industry)
-            .service(stop_industry)
+            .service(stop_industry),
     );
 }

@@ -4,7 +4,6 @@ use std::time::Instant;
 use ntex::web;
 use ntex::web::HttpRequest;
 use ntex::web::ServiceConfig;
-use ntex::web::types::Path;
 
 use serde_json::json;
 use serde_json::to_value;

@@ -83,10 +83,10 @@ impl IndustryUnitType {
     // TODO (#9) Move price based on inflation rate of the station
     pub fn get_price_buy(&self) -> f64 {
         match self {
-            IndustryUnitType::SimpleHullFoundry
-            | IndustryUnitType::SimpleFuelRefinery => 8000.0,
-            IndustryUnitType::AdvancedHullFoundry
-            | IndustryUnitType::AdvancedFuelRefinery => 18000.0,
+            IndustryUnitType::SimpleHullFoundry | IndustryUnitType::SimpleFuelRefinery => 8000.0,
+            IndustryUnitType::AdvancedHullFoundry | IndustryUnitType::AdvancedFuelRefinery => {
+                18000.0
+            }
         }
     }
 }
@@ -211,10 +211,8 @@ impl IndustryUnit {
         if !self.started {
             return None;
         }
-        if self.operator.is_none() {
-            return None;
-        }
-        let mut max_ratio : f64 = 0.0;
+        self.operator?;
+        let mut max_ratio: f64 = 0.0;
         for (res, amnt) in self.resources_required.iter() {
             if let Some(incargo) = resources.get(res) {
                 let max = amnt * tdelta;
@@ -241,7 +239,7 @@ impl IndustryUnit {
         }
 
         for (res, amnt) in self.resources_created.iter() {
-            if !resources.contains_key(&res) {
+            if !resources.contains_key(res) {
                 resources.insert(*res, 0.0);
             }
 
