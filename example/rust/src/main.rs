@@ -1,7 +1,9 @@
 mod sdk;
+mod methods;
 
 use std::time::Duration;
 
+use methods::*;
 use sdk::*;
 
 pub struct Game {
@@ -11,7 +13,7 @@ pub struct Game {
 impl Game {
     pub fn new(username: String) -> Game {
         Game {
-            sdk: sdk::SimeisSDK::new(username, "78.123.114.124", 4444),
+            sdk: sdk::SimeisSDK::new(username, "127.0.0.1", 8080),
         }
     }
 
@@ -24,10 +26,8 @@ impl Game {
         let station_id = all_stations.first().unwrap().as_u64().unwrap();
 
         // On a besoin de savoir quelle planète miner pour équiper notre vaisseau
-        let all_planets = self.sdk.scan_planets(station_id)?;
-        let nearest_planet = all_planets.first().unwrap();
-        let nearest_planet_pos = get_position(nearest_planet).unwrap();
-        println!("Targeting planet {nearest_planet:?}");
+
+        let (nearest_planet, nearest_planet_pos) = find_planet(&self.sdk, station_id)?;
 
         // Si on commence une nouvelle partie, on s'équipe
         let all_my_ships = json_get_list("ships", &status).unwrap();
@@ -42,7 +42,7 @@ impl Game {
             self.sdk.buy_ship(station_id, ship_id)?;
 
             // En fonction de la planète, on achète un module de minage différent
-            let planet_is_solid = json_get_bool("solid", nearest_planet).unwrap();
+            let planet_is_solid = json_get_bool("solid", &nearest_planet).unwrap();
             let module = if planet_is_solid {
                 "Miner"
             } else {
