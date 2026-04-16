@@ -36,12 +36,10 @@ impl Game {
         let ship;
         let ship_id;
         if all_my_ships.is_empty() {
-            let list_all_ships = self.sdk.list_shop_ship(station_id)?;
-            ship = list_all_ships.first().unwrap();
-            ship_id = get_id(ship);
-
-
             self.sdk.buy_ship(station_id, ship_id)?;
+            let (bought_ship, bought_ship_id) = methods::buy_ship(&self.sdk, station_id)?;
+            ship = bought_ship;
+            ship_id = bought_ship_id;
 
             let mod_id = buy_equipment_based_on_planet(&self.sdk, station_id, ship_id, nearest_planet)?;
 
@@ -63,8 +61,8 @@ impl Game {
         // Si on reprends une partie existante
         // On retourne à la station, on vide tout, avant de repartir
         else {
-            ship = all_my_ships.first().unwrap();
-            ship_id = get_id(ship);
+            ship = (*all_my_ships.first().unwrap()).clone();
+            ship_id = get_id(&ship);
             self.sdk.return_station_and_unload_all(station_id, ship_id)?;
         }
 
