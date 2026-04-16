@@ -1,4 +1,5 @@
-mod buyShip;
+mod buy_ship;
+mod planet_finder;
 
-pub use buyShip::buy_ship;
+pub use buy_ship::buy_ship;
 pub use planet_finder::find_planet;

@@ -27,7 +27,7 @@ impl Game {
 
         // On a besoin de savoir quelle planète miner pour équiper notre vaisseau
 
-        let (nearest_planet, nearest_planet_pos) = find_planet(&self.sdk, station_id)?;
+        let (nearest_planet, nearest_planet_pos) = methods::find_planet(&self.sdk, station_id)?;
 
         // Si on commence une nouvelle partie, on s'équipe
         let all_my_ships = json_get_list("ships", &status).unwrap();
