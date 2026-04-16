@@ -1,5 +1,5 @@
 hello: build
 	echo "Hello world"
 
-build:
-	cargo build
+example-rust-build:
+	cd example/rust && cargo build
