@@ -1,4 +1,4 @@
-.PHONY: build tests check clean modify-typ create-player run-server
+.PHONY: build tests check clean modify-typ
 
 build:
 	RUSTFLAGS="-C code-model=kernel -C codegen-units=1" cargo build --verbose
