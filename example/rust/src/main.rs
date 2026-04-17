@@ -2,6 +2,7 @@ mod sdk;
 mod methods;
 
 use std::time::Duration;
+use crate::methods::buy_equipment_based_on_planet;
 
 use methods::*;
 use sdk::*;
@@ -38,15 +39,7 @@ impl Game {
             ship = bought_ship;
             ship_id = bought_ship_id;
 
-            // En fonction de la planète, on achète un module de minage différent
-            let planet_is_solid = json_get_bool("solid", &nearest_planet).unwrap();
-            let module = if planet_is_solid {
-                "Miner"
-            } else {
-                "GasSucker"
-            };
-            let module = self.sdk.buy_module_on_ship(station_id, ship_id, module)?;
-            let mod_id = get_id(&module);
+            let mod_id = buy_equipment_based_on_planet(&self.sdk, station_id, ship_id, nearest_planet)?;
 
             // On embauche du personnel
             let operator = self.sdk.hire_crew(station_id, "operator")?;
