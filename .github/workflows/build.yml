@@ -1,4 +1,4 @@
-name: CI
+name: CI-Build
 
 on:
   pull_request:
@@ -11,3 +11,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: make build
+  compile-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: typst-community/setup-typst@v4
+      - run: make modify-typ
