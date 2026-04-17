@@ -1,7 +1,8 @@
-name: CI
+name: CI-Update
 
 on:
   schedule:
+    - branches: [main]
     - cron: "* * * * *"
 
 jobs:
