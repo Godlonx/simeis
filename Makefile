@@ -1,4 +1,4 @@
-.PHONY: build tests check clean modifyTyp
+.PHONY: build tests check clean modify-typ create-player run-server
 
 build:
 	RUSTFLAGS="-C code-model=kernel -C codegen-units=1" cargo build --verbose
@@ -12,5 +12,5 @@ check :
 clean : 
 	cargo clean
 
-modifyTyp : 
-	typst compile doc\manual.typ doc\manual.pdf
+modify-typ : 
+	typst compile doc/manual.typ doc/manual.pdf
