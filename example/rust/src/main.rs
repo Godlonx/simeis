@@ -3,7 +3,6 @@ mod methods;
 
 use std::time::Duration;
 
-use methods::*;
 use sdk::*;
 
 pub struct Game {
@@ -49,18 +48,16 @@ impl Game {
             let mod_id = get_id(&module);
 
             // On embauche du personnel
-            let operator = self.sdk.hire_crew(station_id, "operator")?;
-            let operator_id = get_id(&operator);
+            let operator_id = methods::hire_new_crew(&self.sdk, station_id, methods::JobType::Operator)?;
             self.sdk
                 .assign_crew_to_ship_module(station_id, ship_id, operator_id, mod_id)?;
 
-            let pilot = self.sdk.hire_crew(station_id, "pilot")?;
-            let pilot_id = get_id(&pilot);
+            let pilot_id = methods::hire_new_crew(&self.sdk, station_id, methods::JobType::Pilot)?;
+
             self.sdk
                 .assign_crew_as_ship_pilot(station_id, ship_id, pilot_id)?;
 
-            let trader = self.sdk.hire_crew(station_id, "trader")?;
-            let trader_id = get_id(&trader);
+            let trader_id = methods::hire_new_crew(&self.sdk, station_id, methods::JobType::Trader)?;
             self.sdk.assign_trader_to_station(station_id, trader_id)?;
         }
         // Si on reprends une partie existante
