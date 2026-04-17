@@ -18,6 +18,12 @@ check :
 clean : 
 	cargo clean
 
+strip : build
+	strip target/debug/simeis-server.exe
+
+strip-release : build-release
+	strip target/release/simeis-server.exe
+
 modify-typ : 
 	typst compile doc/manual.typ doc/manual.pdf
 

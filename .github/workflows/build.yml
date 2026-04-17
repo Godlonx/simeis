@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: make build
+      - run: make strip
   compile-doc:
     runs-on: ubuntu-latest
     steps:
