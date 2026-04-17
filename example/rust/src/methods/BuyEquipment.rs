@@ -5,11 +5,11 @@ pub fn buy_equipment_based_on_planet(
     sdk: &SimeisSDK,
     station_id: u64,
     ship_id: u64,
-    nearest_planet: &Value,
+    nearest_planet: Value,
 ) -> Result<u64, Value> {
     println!("---------- Buying equipment based on the planet ----------");
 
-    let planet_is_solid = json_get_bool("solid", nearest_planet).unwrap();
+    let planet_is_solid = json_get_bool("solid", &nearest_planet).unwrap();
     let module = if planet_is_solid {
         "Miner"
     } else {
