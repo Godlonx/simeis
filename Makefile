@@ -14,3 +14,6 @@ clean :
 
 modify-typ : 
 	typst compile doc/manual.typ doc/manual.pdf
+
+update :
+	cargo update
