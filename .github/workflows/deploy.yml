@@ -16,4 +16,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: make modifyTyp
+      - run: make modify-typ
