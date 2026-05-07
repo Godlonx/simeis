@@ -19,11 +19,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --features heavy-testing
 
+<<<<<<< feature/52-integrating-cargo-audit-and-cargo-udeps-for-dependency-analysis
   dependency-analysis:
+=======
+  functional-tests:
+>>>>>>> develop
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+<<<<<<< feature/52-integrating-cargo-audit-and-cargo-udeps-for-dependency-analysis
       - name: Install nightly toolchain
         run: rustup toolchain install nightly
       - name: Install cargo-audit and cargo-udeps
@@ -32,3 +37,12 @@ jobs:
         run: cargo audit
       - name: Check for unused dependencies
         run: cargo +nightly udeps
+=======
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Build project (debug) with heavy-testing
+        run: cargo build --features heavy-testing
+      - name: Run functional tests
+        run: python tests/functional/run_tests.py
+>>>>>>> develop
