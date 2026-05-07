@@ -28,3 +28,11 @@ La notification des mises à jour disponibles était également affectée par ce
 La découverte du fichier `CODEOWNERS` a été une révélation. Ce mécanisme permet d'assigner automatiquement des reviewers aux pull requests en fonction des fichiers modifiés, facilitant ainsi la séparation des responsabilités au sein de l'équipe.
 
 Les templates de pull requests et d'issues étaient déjà connus de l'équipe. Ils restent néanmoins très utiles pour standardiser la structure des contributions et garantir que les informations essentielles sont systématiquement fournies.
+
+> Le 07/05
+
+## Github Action
+
+L'intégration de GitHub Actions avancées transforme la gestion de votre CI/CD en automatisant les tâches les plus critiques. On peut désormais instaurer des validations de branches rigoureuses pour sécuriser vos fusions, tout en automatisant la mise à jour des branches de comme par exemple la branche release grâce au déclenchement par tags.
+
+Grâce à cette automatisation, on élimine les erreurs et les oublis liés aux `Pull Requests` (PR). Elle permet notamment d'éviter les erreurs de `target branch`, fréquentes lors de l'utilisation de `forks`, tout en automatisant les mises à jour chronophages
