@@ -1,16 +1,16 @@
-name: CI-Build
+name: CI-Build-Release
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [main]
 
 jobs:
-  build:
+  build-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: make build
+      - run: make build-release
   compile-doc:
     runs-on: ubuntu-latest
     steps:
