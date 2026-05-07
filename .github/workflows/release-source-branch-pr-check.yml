@@ -1,4 +1,4 @@
-name: Release PR Source Branch Check
+name: CI-Release-PR-Check
 
 on:
   pull_request:
