@@ -1,5 +1,5 @@
 .PHONY: build tests check clean modify-typ
-ZIZOUNOU
+# hello world this is a tests to test a test
 build:
 	RUSTFLAGS="-C code-model=kernel -C codegen-units=1" cargo build --verbose
 
