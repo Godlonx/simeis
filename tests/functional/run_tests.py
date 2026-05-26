@@ -163,6 +163,105 @@ def scenario_creation_et_achat_vaisseau() -> None:
     print(">>> Scénario 1 : SUCCÈS\n")
 
 
+def scenario_equipage_et_modules() -> None:
+    print("=== Scénario 2 : Gestion de l'équipage et équipement du vaisseau ===")
+
+    print_step("Création du joueur 'test-equipage'")
+    resp = api_call("POST", "/player/new/test-equipage")
+    check_ok(resp, "création joueur")
+    player_id = resp["playerId"]
+    key = resp["key"]
+    print_ok(f"Joueur créé : ID={player_id}")
+
+    print_step("Récupération de la station et achat d'un vaisseau")
+    resp = api_call("GET", f"/player/{player_id}", key=key)
+    check_ok(resp, "statut joueur")
+    station_id = resp["stations"][0]
+
+    resp = api_call("GET", f"/station/{station_id}/shipyard/list", key=key)
+    check_ok(resp, "liste chantier naval")
+    vaisseau_id_catalogue = resp["ships"][0]["id"]
+
+    resp = api_call(
+        "POST", f"/station/{station_id}/shipyard/buy/{vaisseau_id_catalogue}", key=key
+    )
+    check_ok(resp, "achat vaisseau")
+    vaisseau_id = resp["id"]
+    print_ok(f"Vaisseau acheté : ID={vaisseau_id}")
+
+    print_step("Embauche d'un Pilote pour la station")
+    resp = api_call("POST", f"/station/{station_id}/crew/hire/Pilot", key=key)
+    check_ok(resp, "embauche pilote")
+    pilote_id = resp["id"]
+    print_ok(f"Pilote embauché : ID={pilote_id}")
+
+    print_step(f"Assignation du pilote ID={pilote_id} au vaisseau ID={vaisseau_id}")
+    resp = api_call(
+        "POST",
+        f"/station/{station_id}/crew/assign/{pilote_id}/ship/{vaisseau_id}/pilot",
+        key=key,
+    )
+    check_ok(resp, "assignation pilote")
+    print_ok("Pilote assigné au vaisseau")
+
+    print_step("Embauche d'un Opérateur pour la station")
+    resp = api_call("POST", f"/station/{station_id}/crew/hire/Operator", key=key)
+    check_ok(resp, "embauche opérateur")
+    operateur_id = resp["id"]
+    print_ok(f"Opérateur embauché : ID={operateur_id}")
+
+    print_step(f"Achat d'un module Miner pour le vaisseau ID={vaisseau_id}")
+    resp = api_call(
+        "POST",
+        f"/station/{station_id}/shop/modules/{vaisseau_id}/buy/Miner",
+        key=key,
+    )
+    check_ok(resp, "achat module Miner")
+    module_id = resp["id"]
+    cout_module = resp["cost"]
+    print_ok(f"Module Miner acheté : ID={module_id}, coût={cout_module}")
+
+    print_step(
+        f"Assignation de l'opérateur ID={operateur_id} au module ID={module_id} "
+        f"du vaisseau ID={vaisseau_id}"
+    )
+    resp = api_call(
+        "POST",
+        f"/station/{station_id}/crew/assign/{operateur_id}/ship/{vaisseau_id}/{module_id}",
+        key=key,
+    )
+    check_ok(resp, "assignation opérateur au module")
+    print_ok("Opérateur assigné au module du vaisseau")
+
+    print_step("Vérification de l'état final du vaisseau")
+    resp = api_call("GET", f"/ship/{vaisseau_id}", key=key)
+    check_ok(resp, "statut vaisseau final")
+
+    assert (
+        resp.get("pilot") is not None
+    ), f"Le vaisseau devrait avoir un pilote assigné, mais 'pilot' vaut {resp.get('pilot')}"
+    print_ok(f"Pilote bien présent sur le vaisseau : {resp['pilot']}")
+
+    modules = resp.get("modules", {})
+    assert (
+        len(modules) > 0
+    ), f"Le vaisseau devrait avoir au moins un module, mais 'modules' est vide : {modules}"
+
+    module_key = str(module_id)
+    assert (
+        module_key in modules
+    ), f"Le module ID={module_id} devrait être dans les modules du vaisseau : {list(modules.keys())}"
+    module_data = modules[module_key]
+    assert (
+        module_data.get("operator") is not None
+    ), f"Le module devrait avoir un opérateur assigné, mais 'operator' vaut {module_data.get('operator')}"
+    print_ok(
+        f"Module {module_id} bien présent avec opérateur : {module_data.get('operator')}"
+    )
+
+    print(">>> Scénario 2 : SUCCÈS\n")
+
+
 def main() -> int:
     server_proc = None
     try:
@@ -174,6 +273,7 @@ def main() -> int:
     erreur = None
     try:
         scenario_creation_et_achat_vaisseau()
+        scenario_equipage_et_modules()
         print("=== Tous les tests fonctionnels ont réussi ! ===")
     except AssertionError as e:
         print(f"\nECHEC : Assertion non vérifiée : {e}", file=sys.stderr)
