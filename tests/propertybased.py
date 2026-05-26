@@ -58,7 +58,29 @@ def distance():
     z2 = random.randrange(-100, 100)
     b = (x2, y2, z2)
 
-    # Exercice:     Tester la distance entre le point A et le point B
+    epsilon = 1e-9
+
+    assert get_dist(a, b) >= 0, f"Non-négativité échouée : dist({a}, {b}) < 0"
+
+    assert get_dist(a, a) < epsilon, f"Identité échouée : dist({a}, {a}) != 0"
+    assert get_dist(b, b) < epsilon, f"Identité échouée : dist({b}, {b}) != 0"
+
+    assert (
+        abs(get_dist(a, b) - get_dist(b, a)) < epsilon
+    ), f"Symétrie échouée : dist({a},{b}) != dist({b},{a})"
+
+    expected = math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
+    assert (
+        abs(get_dist(a, b) - expected) < epsilon
+    ), f"Distance incorrecte : get_dist={get_dist(a, b)}, attendu={expected}"
+
+    x3 = random.randrange(-100, 100)
+    y3 = random.randrange(-100, 100)
+    z3 = random.randrange(-100, 100)
+    c = (x3, y3, z3)
+    assert (
+        get_dist(a, b) <= get_dist(a, c) + get_dist(c, b) + epsilon
+    ), f"Inégalité triangulaire échouée : dist({a},{b}) > dist({a},{c}) + dist({c},{b})"
 
 
 create_property_based_test(addition, time_test=3)
