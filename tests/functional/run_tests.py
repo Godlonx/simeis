@@ -262,6 +262,109 @@ def scenario_equipage_et_modules() -> None:
     print(">>> Scénario 2 : SUCCÈS\n")
 
 
+def scenario_commerce_marche() -> None:
+    print("=== Scénario 3 : Commerce sur le marché ===")
+
+    print_step("Création du joueur 'test-rich-commerce'")
+    resp = api_call("POST", "/player/new/test-rich-commerce")
+    check_ok(resp, "création joueur riche")
+    player_id = resp["playerId"]
+    key = resp["key"]
+    print_ok(f"Joueur créé : ID={player_id}")
+
+    print_step("Récupération de la station de départ")
+    resp = api_call("GET", f"/player/{player_id}", key=key)
+    check_ok(resp, "statut joueur")
+    station_id = resp["stations"][0]
+    money_initiale = resp["money"]
+    print_ok(f"Station ID={station_id}, argent initial={money_initiale}")
+
+    print_step("Embauche d'un Trader pour la station")
+    resp = api_call("POST", f"/station/{station_id}/crew/hire/Trader", key=key)
+    check_ok(resp, "embauche trader")
+    trader_id = resp["id"]
+    print_ok(f"Trader embauché : ID={trader_id}")
+
+    print_step(f"Assignation du Trader ID={trader_id} à la station")
+    resp = api_call(
+        "POST",
+        f"/station/{station_id}/crew/assign/{trader_id}/trading",
+        key=key,
+    )
+    check_ok(resp, "assignation trader")
+    print_ok("Trader assigné à la station")
+
+    print_step("Consultation des prix du marché (endpoint public)")
+    resp = api_call("GET", "/market/prices")
+    check_ok(resp, "prix marché")
+    assert (
+        "Carbon" in resp
+    ), f"Le marché devrait lister la ressource 'Carbon', réponse : {resp}"
+    prix_carbon = resp["Carbon"]
+    print_ok(f"Prix du marché récupérés, Carbon={prix_carbon} crédits/unité")
+
+    quantite_achat = 10.0
+    print_step(f"Achat de {quantite_achat} unités de Carbon sur le marché")
+    resp = api_call(
+        "POST",
+        f"/market/{station_id}/buy/Carbon/{quantite_achat}",
+        key=key,
+    )
+    check_ok(resp, "achat Carbon")
+    argent_retire = resp.get("removed_money")
+    assert (
+        argent_retire is not None and argent_retire > 0
+    ), f"L'achat devrait retirer de l'argent, removed_money={argent_retire}"
+    print_ok(f"Achat réussi : {argent_retire} crédits débités (frais inclus)")
+
+    print_step("Vérification de la diminution d'argent après l'achat")
+    resp = api_call("GET", f"/player/{player_id}", key=key)
+    check_ok(resp, "statut joueur après achat")
+    money_apres_achat = resp["money"]
+    assert (
+        money_apres_achat < money_initiale
+    ), f"L'argent devrait avoir diminué : avant={money_initiale}, après={money_apres_achat}"
+    print_ok(
+        f"Argent après achat : {money_apres_achat} (réduit de {money_initiale - money_apres_achat:.2f})"
+    )
+
+    print_step("Consultation du taux de frais de la station")
+    resp = api_call("GET", f"/market/{station_id}/fee_rate", key=key)
+    check_ok(resp, "taux de frais")
+    fee_rate = resp.get("fee_rate")
+    assert (
+        fee_rate is not None and fee_rate > 0.0
+    ), f"Le taux de frais devrait être positif, fee_rate={fee_rate}"
+    print_ok(f"Taux de frais récupéré : {fee_rate:.2%}")
+
+    print_step(f"Revente de {quantite_achat} unités de Carbon sur le marché")
+    resp = api_call(
+        "POST",
+        f"/market/{station_id}/sell/Carbon/{quantite_achat}",
+        key=key,
+    )
+    check_ok(resp, "vente Carbon")
+    argent_ajoute = resp.get("added_money")
+    assert (
+        argent_ajoute is not None and argent_ajoute > 0
+    ), f"La vente devrait ajouter de l'argent, added_money={argent_ajoute}"
+    print_ok(f"Vente réussie : {argent_ajoute} crédits encaissés (frais déduits)")
+
+    print_step("Vérification de l'argent après la vente")
+    resp = api_call("GET", f"/player/{player_id}", key=key)
+    check_ok(resp, "statut joueur après vente")
+    money_apres_vente = resp["money"]
+    assert money_apres_vente > money_apres_achat, (
+        f"L'argent devrait avoir augmenté après la vente : "
+        f"avant vente={money_apres_achat}, après vente={money_apres_vente}"
+    )
+    print_ok(
+        f"Argent après vente : {money_apres_vente} (gain : {money_apres_vente - money_apres_achat:.2f})"
+    )
+
+    print(">>> Scénario 3 : SUCCÈS\n")
+
+
 def main() -> int:
     server_proc = None
     try:
@@ -274,6 +377,7 @@ def main() -> int:
     try:
         scenario_creation_et_achat_vaisseau()
         scenario_equipage_et_modules()
+        scenario_commerce_marche()
         print("=== Tous les tests fonctionnels ont réussi ! ===")
     except AssertionError as e:
         print(f"\nECHEC : Assertion non vérifiée : {e}", file=sys.stderr)
