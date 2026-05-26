@@ -92,6 +92,77 @@ def stop_server(proc: subprocess.Popen) -> None:
     print("Serveur arrêté.")
 
 
+def scenario_creation_et_achat_vaisseau() -> None:
+    print("=== Scénario 1 : Création d'un joueur et achat d'un vaisseau ===")
+
+    print_step("Création du joueur 'test-achat-vaisseau'")
+    resp = api_call("POST", "/player/new/test-achat-vaisseau")
+    check_ok(resp, "création joueur")
+    player_id = resp["playerId"]
+    key = resp["key"]
+    print_ok(f"Joueur créé : ID={player_id}")
+
+    print_step("Vérification de l'argent initial (72 000 crédits attendus)")
+    resp = api_call("GET", f"/player/{player_id}", key=key)
+    check_ok(resp, "statut joueur")
+    money_initiale = resp["money"]
+    assert (
+        money_initiale == 72000.0
+    ), f"L'argent initial devrait être 72000, mais vaut {money_initiale}"
+    print_ok(f"Argent initial correct : {money_initiale} crédits")
+
+    print_step("Récupération de l'identifiant de la station de départ")
+    stations = resp["stations"]
+    assert len(stations) > 0, "Le joueur devrait avoir au moins une station"
+    station_id = stations[0]
+    print_ok(f"Station de départ trouvée : ID={station_id}")
+
+    print_step("Listage des vaisseaux disponibles dans le chantier naval")
+    resp = api_call("GET", f"/station/{station_id}/shipyard/list", key=key)
+    check_ok(resp, "liste chantier naval")
+    ships_dispo = resp["ships"]
+    assert len(ships_dispo) > 0, "Il devrait y avoir au moins un vaisseau à vendre"
+    premier_vaisseau = ships_dispo[0]
+    vaisseau_id = premier_vaisseau["id"]
+    prix_vaisseau = premier_vaisseau["price"]
+    print_ok(
+        f"Vaisseaux disponibles : {len(ships_dispo)}, premier ID={vaisseau_id}, prix={prix_vaisseau}"
+    )
+
+    print_step(f"Achat du vaisseau ID={vaisseau_id} pour {prix_vaisseau} crédits")
+    resp = api_call(
+        "POST", f"/station/{station_id}/shipyard/buy/{vaisseau_id}", key=key
+    )
+    check_ok(resp, "achat vaisseau")
+    nouveau_vaisseau_id = resp["id"]
+    print_ok(f"Vaisseau acheté avec succès, nouvel ID={nouveau_vaisseau_id}")
+
+    print_step("Vérification de la diminution d'argent après l'achat")
+    resp = api_call("GET", f"/player/{player_id}", key=key)
+    check_ok(resp, "statut joueur après achat")
+    money_apres = resp["money"]
+    assert (
+        money_apres < money_initiale
+    ), f"L'argent devrait avoir diminué après l'achat : avant={money_initiale}, après={money_apres}"
+    depense = money_initiale - money_apres
+    assert (
+        abs(depense - prix_vaisseau) < 1.0
+    ), f"La dépense ({depense}) devrait correspondre au prix du vaisseau ({prix_vaisseau})"
+    print_ok(f"Argent après achat : {money_apres} crédits (dépense : {depense})")
+
+    print_step("Vérification que le vaisseau est bien associé au joueur")
+    resp = api_call("GET", f"/player/{player_id}", key=key)
+    check_ok(resp, "statut joueur vaisseaux")
+    vaisseaux_joueur = resp["ships"]
+    ids_vaisseaux = [v["id"] for v in vaisseaux_joueur]
+    assert (
+        nouveau_vaisseau_id in ids_vaisseaux
+    ), f"Le vaisseau ID={nouveau_vaisseau_id} devrait apparaître dans {ids_vaisseaux}"
+    print_ok(f"Vaisseau ID={nouveau_vaisseau_id} bien présent dans la flotte du joueur")
+
+    print(">>> Scénario 1 : SUCCÈS\n")
+
+
 def main() -> int:
     server_proc = None
     try:
@@ -102,6 +173,7 @@ def main() -> int:
 
     erreur = None
     try:
+        scenario_creation_et_achat_vaisseau()
         print("=== Tous les tests fonctionnels ont réussi ! ===")
     except AssertionError as e:
         print(f"\nECHEC : Assertion non vérifiée : {e}", file=sys.stderr)
