@@ -32,6 +32,16 @@ jobs:
       - name: Run functional tests
         run: python tests/functional/run_tests.py
 
+  property-based-heavy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Exécuter les tests basés sur les propriétés (version lourde)
+        run: python tests/propertybased.py --heavy
+
   dependency-analysis:
     runs-on: ubuntu-latest
     steps:
