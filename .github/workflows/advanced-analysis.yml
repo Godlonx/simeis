@@ -1,47 +1,47 @@
-name: CI-Advanced-Analysis                                                                                                                                                      
-                                                                                                                                              
-  on:                                          
-    push:
-      branches:
-        - 'release/**'
+name: CI-Advanced-Analysis
 
-  jobs:
-    setup:
-      runs-on: ubuntu-latest                                                                                                                                                      
-      steps:
-        - uses: actions/checkout@v4                                                                                                                                               
-        - uses: dtolnay/rust-toolchain@stable                                                                                                 
-                                               
-    heavy-tests:                                                                                                                                                                  
-      runs-on: ubuntu-latest
-      steps:                                                                                                                                                                      
-        - uses: actions/checkout@v4                                                                                                           
-        - uses: dtolnay/rust-toolchain@stable  
-        - run: cargo test --features heavy-testing
-                                                                                                                                                                                  
-    functional-tests:
-      runs-on: ubuntu-latest                                                                                                                                                      
-      steps:                                                                                                                                  
-        - uses: actions/checkout@v4            
-        - uses: dtolnay/rust-toolchain@stable
-        - uses: actions/setup-python@v5                                                                                                                                           
-          with:
-            python-version: '3.x'                                                                                                                                                 
-        - name: Build project (debug) with heavy-testing                                                                                      
-          run: cargo build --features heavy-testing                                                                                                                               
-        - name: Run functional tests
-          run: python tests/functional/run_tests.py                                                                                                                               
-                                                                                                                                              
-    dependency-analysis:                       
-      runs-on: ubuntu-latest
-      steps:                                                                                                                                                                      
-        - uses: actions/checkout@v4
-        - uses: dtolnay/rust-toolchain@stable                                                                                                                                     
-        - name: Install nightly toolchain                                                                                                     
-          run: rustup toolchain install nightly
-        - name: Install cargo-audit and cargo-udeps                                                                                                                               
-          run: cargo install cargo-audit cargo-udeps
-        - name: Audit dependencies                                                                                                                                                
-          run: cargo audit                                                                                                                                                        
-        - name: Check for unused dependencies  
-          run: cargo +nightly udeps
+on:
+  push:
+    branches:
+      - 'release/**'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+  heavy-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --features heavy-testing
+
+  functional-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Build project (debug) with heavy-testing
+        run: cargo build --features heavy-testing
+      - name: Run functional tests
+        run: python tests/functional/run_tests.py
+
+  dependency-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install nightly toolchain
+        run: rustup toolchain install nightly
+      - name: Install cargo-audit and cargo-udeps
+        run: cargo install cargo-audit cargo-udeps
+      - name: Audit dependencies
+        run: cargo audit
+      - name: Check for unused dependencies
+        run: cargo +nightly udeps
