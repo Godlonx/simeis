@@ -83,5 +83,11 @@ def distance():
     ), f"Inégalité triangulaire échouée : dist({a},{b}) > dist({a},{c}) + dist({c},{b})"
 
 
-create_property_based_test(addition, time_test=3)
-create_property_based_test(distance, regressions=[4480881574280375424], time_test=10)
+heavy = "--heavy" in sys.argv
+time_addition = 300 if heavy else 3
+time_distance = 300 if heavy else 10
+
+create_property_based_test(addition, time_test=time_addition)
+create_property_based_test(
+    distance, regressions=[4480881574280375424], time_test=time_distance
+)
