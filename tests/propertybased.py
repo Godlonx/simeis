@@ -35,7 +35,16 @@ def addition():
     y = random.randrange(0, 10000)
     z = random.randrange(0, 10000)
 
-    # Exercice:    Tester les additions
+    assert x + y == y + x, f"Commutativité échouée : {x} + {y} != {y} + {x}"
+
+    assert (x + y) + z == x + (
+        y + z
+    ), f"Associativité échouée : ({x}+{y})+{z} != {x}+({y}+{z})"
+
+    assert x + 0 == x, f"Élément neutre échoué : {x} + 0 != {x}"
+
+    assert x + y >= x, f"Croissance échouée : {x} + {y} < {x}"
+    assert x + y >= y, f"Croissance échouée : {x} + {y} < {y}"
 
 
 def distance():
