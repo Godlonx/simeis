@@ -1,15 +1,15 @@
-name: CI-Build
+name: CI-Build-Release
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [main]
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: build-release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,11 +18,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
-          restore-keys: ${{ runner.os }}-cargo-build-
-      
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
+          restore-keys: ${{ runner.os }}-cargo-release-
+
       - uses: dtolnay/rust-toolchain@stable
-      - run: make build
+      - run: make build-release
 
   compile-doc:
     runs-on: ubuntu-latest
@@ -41,7 +41,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - uses: actions/checkout@v4
 
@@ -49,15 +48,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
-          restore-keys: ${{ runner.os }}-cargo-build-
-      
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
+          restore-keys: ${{ runner.os }}-cargo-release-
+
       - uses: dtolnay/rust-toolchain@stable
       - run: make tests
 
   check:
     runs-on: ubuntu-latest
-    needs: build
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -65,8 +64,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target/
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
-          restore-keys: ${{ runner.os }}-cargo-build-
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
+          restore-keys: ${{ runner.os }}-cargo-release-
 
       - uses: dtolnay/rust-toolchain@stable
       - run: make check
