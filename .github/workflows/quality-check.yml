@@ -3,6 +3,11 @@ name: CI-QUALITY-CHECK
 on:
   pull_request:
 
+    
+concurrency:
+  group: quality-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality-check:
     runs-on: ubuntu-latest
