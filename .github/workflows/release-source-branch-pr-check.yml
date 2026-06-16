@@ -5,6 +5,9 @@ on:
     branches:
       - release/**  # Trigger on all release branch targeted by PR
 
+concurrency:
+  group: release-pr-check-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check-branch:
