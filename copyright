@@ -1,0 +1,12 @@
+simeis
+
+Upstream-Name: simeis
+Upstream-Contact: Timothée Cercueil (Litchi Pi)
+Source: https://github.com/litchipi/simeis
+
+Copyright: 2026 Timothée Cercueil (upstream)
+Copyright: 2026 Maxence Mahieux (Debian packaging)
+
+License: TODO (à remplir selon ce que tu trouves dans Cargo.toml ou LICENSE)
+
+See /usr/share/common-licenses/
