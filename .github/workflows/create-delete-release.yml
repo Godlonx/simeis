@@ -7,7 +7,6 @@ on:
     types: [closed]
 
 jobs:
-  
   build-changelog:
     runs-on: ubuntu-latest
     permissions:
@@ -68,7 +67,7 @@ jobs:
 
   build-artifacts:
    runs-on: ubuntu-latest
-   needs: build-changelog
+   needs: [build-changelog]
    steps:
       - uses: actions/checkout@v4
 
