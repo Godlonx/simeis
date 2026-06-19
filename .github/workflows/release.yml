@@ -1,0 +1,100 @@
+name: CI-Release
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+jobs : 
+    create-release : 
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: read
+
+        steps:
+            - uses: actions/checkout@v4
+            
+            - uses: actions/cache@v4
+              with: 
+                path: target/   
+                key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
+                restore-keys: ${{ runner.os }}-cargo-release-
+            
+            - uses: dtolnay/rust-toolchain@stable
+
+            - run: make build-release
+
+            - name: Cache Typst
+              uses: actions/cache@v4
+              with:
+                path: ~/.cache/typst
+                key: ${{ runner.os }}-typst-${{ hashFiles('**/*.typ') }}
+                restore-keys: ${{ runner.os }}-typst-
+            
+            - uses: typst-community/setup-typst@v4
+
+            - run: make modify-typ
+
+
+            - name : Create changelog
+              id: changelog
+              env:
+                GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                RELEASE_BRANCH: ${{ github.base_ref }}
+              run : |
+                 # extract version from v name (1.0.0)
+                 VERSION=${RELEASE_BRANCH#release/}
+                    TAG="v$VERSION"
+                    echo "Version : $VERSION"
+
+                 # get merged PRs 
+                 PRS=$(gh pr list \
+                    --base "$RELEASE_BRANCH" \
+                    --state merged \
+                    --json title,headRefName,url \
+                    --limit 100)
+
+                 # init categories
+                 FEATURES=""
+                 BUGFIXES=""
+                 OTHERS=""
+
+                 # extract prs infos
+                 while IFS= read -r pr; do
+                    TITLE=$(echo "$pr"  | jq -r '.title')
+                    URL=$(echo "$pr"    | jq -r '.url')
+                    BRANCH=$(echo "$pr" | jq -r '.headRefName')
+                    
+                    # transform the infos into a md line
+                    LINE="- [$TITLE]($URL)"
+
+                    #sort based on branch name
+                    if [[ "$BRANCH" == feature/* ]]; then
+                    FEATURES="$FEATURES\n$LINE"
+                    elif [[ "$BRANCH" == bug/* ]]; then
+                    BUGFIXES="$BUGFIXES\n$LINE"
+                    else
+                    OTHERS="$OTHERS\n$LINE"
+                    fi
+                 done < <(echo "$PRS" | jq -c '.[]')
+
+                 # assemble the changelog
+                 CHANGELOG="## Changelog $VERSION\n\n"
+                 [ -n "$FEATURES" ] && CHANGELOG="${CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
+                 [ -n "$BUGFIXES" ] && CHANGELOG="${CHANGELOG}### 🐛 Bugfixes\n${BUGFIXES}\n\n"
+                 [ -n "$OTHERS"   ] && CHANGELOG="${CHANGELOG}### 🔧 Autres\n${OTHERS}\n\n"
+                 echo -e "$CHANGELOG" > changelog.md
+
+                 git tag "$TAG" || true
+                 git push origin "$TAG" || true
+
+                 if gh release view "$TAG" > /dev/null 2>&1; then
+                    gh release edit "$TAG" --notes-file changelog.md --title "Release $VERSION"
+                 else
+                    gh release create "$TAG" --notes-file changelog.md --title "Release $VERSION"
+                 fi
+
+                 # Uploader les artefacts
+                 gh release upload "$TAG" target/release/simeis-server --clobber
+                 gh release upload "$TAG" doc/manual.pdf --clobber
