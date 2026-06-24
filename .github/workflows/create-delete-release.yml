@@ -79,7 +79,15 @@ jobs:
 
       - name: Build PDF documentation
         uses: typst-community/setup-typst@v4
-      - run: make modify-typ
+
+      - name: Build PDF documentation
+        run: make modify-typ
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-pdf
+          path: doc/manual.pdf
 
       - name: Download changelog
         uses: actions/download-artifact@v4
@@ -120,6 +128,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts
+
+      - name: Download PDF artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: manual-pdf
+          path: doc/
 
       - name: Download changelog
         uses: actions/download-artifact@v4
