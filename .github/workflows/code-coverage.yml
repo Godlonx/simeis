@@ -28,7 +28,12 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-tarpaulin-
 
       - name: Installer cargo-tarpaulin
-        run: cargo install cargo-tarpaulin
+        run: |
+          if command -v cargo-tarpaulin >/dev/null 2>&1; then
+            echo "cargo-tarpaulin déjà présent (restauré depuis le cache), installation ignorée"
+          else
+            cargo install cargo-tarpaulin
+          fi
 
       - name: Mesurer la couverture de code
         id: coverage
