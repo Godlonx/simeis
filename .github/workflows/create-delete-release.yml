@@ -27,6 +27,8 @@ jobs:
           RELEASE_BRANCH: ${{ github.ref_name }}
         run: |
           VERSION=${{ env.VERSION }}
+          DATE=$(date -R)
+          MAINTAINER="Your Name <your@email.com>"
 
           PRS=$(gh pr list \
             --base "$RELEASE_BRANCH" \
@@ -37,33 +39,48 @@ jobs:
           FEATURES=""
           BUGFIXES=""
           OTHERS=""
+          DEB_ENTRIES=""
 
           while IFS= read -r pr; do
             TITLE=$(echo "$pr"  | jq -r '.title')
             URL=$(echo "$pr"    | jq -r '.url')
             BRANCH=$(echo "$pr" | jq -r '.headRefName')
             LINE="- [$TITLE]($URL)"
+
             if [[ "$BRANCH" == feature/* ]]; then
               FEATURES="$FEATURES\n$LINE"
+              DEB_ENTRIES="$DEB_ENTRIES  * [Feature] $TITLE\n"
             elif [[ "$BRANCH" == bug/* ]]; then
               BUGFIXES="$BUGFIXES\n$LINE"
+              DEB_ENTRIES="$DEB_ENTRIES  * [Bugfix] $TITLE\n"
             else
               OTHERS="$OTHERS\n$LINE"
+              DEB_ENTRIES="$DEB_ENTRIES  * $TITLE\n"
             fi
           done < <(echo "$PRS" | jq -c '.[]')
 
+          # changelog.md
           CHANGELOG="## Changelog $VERSION\n\n"
           [ -n "$FEATURES" ] && CHANGELOG="${CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
           [ -n "$BUGFIXES" ] && CHANGELOG="${CHANGELOG}### 🐛 Bugfixes\n${BUGFIXES}\n\n"
           [ -n "$OTHERS"   ] && CHANGELOG="${CHANGELOG}### 🔧 Autres\n${OTHERS}\n\n"
-
           echo -e "$CHANGELOG" > changelog.md
+
+          # changelog.debian
+          {
+            echo "simeis-server ($VERSION) stable; urgency=medium"
+            echo ""
+            echo -e "$DEB_ENTRIES"
+            echo " -- $MAINTAINER  $DATE"
+          } > changelog.debian
 
       - name: Upload changelog
         uses: actions/upload-artifact@v4
         with:
           name: changelog
-          path: changelog.md
+          path: |
+            changelog.md
+            changelog.debian
 
   build-artifacts:
    runs-on: ubuntu-latest
@@ -102,7 +119,7 @@ jobs:
          mkdir -p package
          cp target/release/simeis-server package/
          cp doc/manual.pdf package/
-         cp changelog.md package/changelog.debian
+         cp changelog.debian package/changelog.debian
          tar czf simeis-server_${VERSION}.tar.gz -C package .
 
       - name: Upload artifacts
@@ -163,3 +180,4 @@ jobs:
           gh release upload "$TAG" doc/manual.pdf --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
