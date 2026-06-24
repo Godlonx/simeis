@@ -28,7 +28,7 @@ jobs:
         run: |
           VERSION=${{ env.VERSION }}
           DATE=$(date -R)
-          MAINTAINER="Your Name remi.laurent44@gmail.com"
+          MAINTAINER="Godlonx <remi.laurent44@gmail.com>"
 
           PRS=$(gh pr list \
             --base "$RELEASE_BRANCH" \
@@ -68,7 +68,7 @@ jobs:
 
           # changelog.debian
           {
-            echo "simeis-server ($VERSION) stable; urgency=medium"
+            echo "simeis ($VERSION) stable; urgency=medium"
             echo ""
             echo -e "$DEB_ENTRIES"
             echo " -- $MAINTAINER  $DATE"
@@ -117,16 +117,16 @@ jobs:
          VERSION="${VERSION#release/}"
          echo "VERSION=$VERSION" >> $GITHUB_ENV   
          mkdir -p package
-         cp target/release/simeis-server package/
+         cp target/release/simeis-server package/simeis
          cp doc/manual.pdf package/
          cp changelog.debian package/changelog.debian
-         tar czf simeis-server_${VERSION}.tar.gz -C package .
+         tar czf simeis_${VERSION}.tar.gz -C package .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
          name: release-artifacts
-         path: simeis-server_${{ env.VERSION }}.tar.gz
+         path: simeis_${{ env.VERSION }}.tar.gz
 
   create-release:
     runs-on: ubuntu-latest
@@ -176,7 +176,7 @@ jobs:
               --notes-file changelog.md \
               --title "Release $TAG"
           fi
-          gh release upload "$TAG" simeis-server_${TAG}.tar.gz --clobber
+          gh release upload "$TAG" simeis_${TAG}.tar.gz --clobber
           gh release upload "$TAG" doc/manual.pdf --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
