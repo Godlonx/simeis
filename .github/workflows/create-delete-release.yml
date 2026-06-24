@@ -118,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
          name: release-artifacts
-         path: simeis-server_${VERSION}.tar.gz
+         path: simeis-server_*.tar.gz
 
   create-release:
     runs-on: ubuntu-latest
