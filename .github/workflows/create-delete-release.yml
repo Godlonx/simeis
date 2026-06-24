@@ -28,7 +28,7 @@ jobs:
         run: |
           VERSION=${{ env.VERSION }}
           DATE=$(date -R)
-          MAINTAINER="Your Name <your@email.com>"
+          MAINTAINER="Your Name remi.laurent44@gmail.com"
 
           PRS=$(gh pr list \
             --base "$RELEASE_BRANCH" \
