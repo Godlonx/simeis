@@ -48,10 +48,10 @@ sudo apt-get install -y dpkg-dev fakeroot lintian
 Récupérer un tarball de release puis lancer le script depuis la **racine du repo** :
 
 ```sh
-# Exemple avec la release 1.0.0
-wget https://github.com/Godlonx/simeis/releases/download/1.0.0/simeis-server_1.0.0.tar.gz
+# Exemple avec la release 1.1.0
+wget https://github.com/Godlonx/simeis/releases/download/1.1.0/simeis-server_1.1.0.tar.gz
 
-./packaging/debian/build-deb.sh simeis-server_1.0.0.tar.gz 1.0.0
+./packaging/debian/build-deb.sh simeis-server_1.1.0.tar.gz 1.1.0
 ```
 
 Le script affiche chaque étape ; en cas de succès, il indique le chemin et la taille
@@ -60,7 +60,7 @@ du paquet.
 ## Où trouver le `.deb` final
 
 - **En local** : à la racine du repo, sous le nom `simeis_<VERSION>_amd64.deb`
-  (par exemple `simeis_1.0.0_amd64.deb`). Il est ignoré par git (`.gitignore`).
+  (par exemple `simeis_1.1.0_amd64.deb`). Il est ignoré par git (`.gitignore`).
 - **En CI** : uploadé automatiquement comme asset sur la release GitHub
   correspondante. L'URL publique est affichée à la fin du job `build-deb`.
 
@@ -69,5 +69,5 @@ du paquet.
 Le workflow `.github/workflows/build-deb.yml` se lance automatiquement à la
 publication d'une release. Il peut aussi être déclenché à la main
 (*Actions → Build Debian package → Run workflow*) :
-- avec un champ `version` (ex. `1.0.0`) pour cibler une release précise ;
+- avec un champ `version` (ex. `1.1.0`) pour cibler une release précise ;
 - ou sans rien, pour utiliser la dernière release publiée.
