@@ -90,6 +90,7 @@ jobs:
         run: |
          VERSION="${{ github.ref_name }}"
          VERSION="${VERSION#release/}"
+         echo "VERSION=$VERSION" >> $GITHUB_ENV   
          mkdir -p package
          cp target/release/simeis-server package/
          cp doc/manual.pdf package/
@@ -100,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
          name: release-artifacts
-         path: simeis-server_${VERSION}.tar.gz
+         path: simeis-server_${{ env.VERSION }}.tar.gz
 
   create-release:
     runs-on: ubuntu-latest
