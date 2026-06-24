@@ -167,7 +167,7 @@ jobs:
       - name: Create or update release
         run: |
           TAG="${{ env.VERSION }}"
-          if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
+          if gh release view "$TAG" > /dev/null 2>&1; then
             gh release edit "$TAG" \
               --notes-file changelog.md \
               --title "Release $TAG"
