@@ -63,12 +63,14 @@ EXTRACT_DIR="$BUILD_DIR/extracted"
 mkdir -p "$EXTRACT_DIR"
 tar -xzf "$TARBALL" -C "$EXTRACT_DIR"
 
-# Localisation robuste (le tarball peut contenir un sous-dossier)
-SRC_BIN="$(find "$EXTRACT_DIR" -type f -name simeis | head -n1)"
+# Localisation robuste (le tarball peut contenir un sous-dossier).
+# Le binaire peut s'appeler 'simeis' ou 'simeis-server' selon la CI ;
+# dans tous les cas il sera installé en /usr/bin/simeis (étape 4).
+SRC_BIN="$(find "$EXTRACT_DIR" -type f \( -name simeis -o -name simeis-server \) | head -n1)"
 SRC_PDF="$(find "$EXTRACT_DIR" -type f -name manual.pdf | head -n1)"
 SRC_CHANGELOG="$(find "$EXTRACT_DIR" -type f -name changelog.debian | head -n1)"
 
-if [ -z "$SRC_BIN" ];       then echo "ERREUR: binaire 'simeis' absent du tarball" >&2; exit 1; fi
+if [ -z "$SRC_BIN" ];       then echo "ERREUR: binaire 'simeis' (ou 'simeis-server') absent du tarball" >&2; exit 1; fi
 if [ -z "$SRC_PDF" ];       then echo "ERREUR: 'manual.pdf' absent du tarball" >&2; exit 1; fi
 if [ -z "$SRC_CHANGELOG" ]; then echo "ERREUR: 'changelog.debian' absent du tarball" >&2; exit 1; fi
 echo "    binaire   : $SRC_BIN"
