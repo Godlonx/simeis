@@ -1,0 +1,4 @@
+ARG RUST_VERSION=1.85.0-bookworm
+
+
+FROM rust:${RUST_VERSION}

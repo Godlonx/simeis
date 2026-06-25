@@ -119,10 +119,40 @@ jobs:
         with:
          name: release-artifacts
          path: simeis-server_${VERSION}.tar.gz
+  
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: build-changelog
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          echo "VERSION=${VERSION#release/}" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f .github/Dockerfile \
+            -t simeis-server:${{ env.VERSION }} \
+            .
+
+      - name: Save Docker image into archive
+        run: |
+          docker image save \
+            simeis-server:${{ env.VERSION }} \
+            -o simeis-server_${{ env.VERSION }}_docker.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: simeis-server_${{ env.VERSION }}_docker.tar
 
   create-release:
     runs-on: ubuntu-latest
-    needs: [build-artifacts, build-changelog]
+    needs: [build-artifacts, build-changelog, build-docker]
     permissions:
       contents: write
     steps:
@@ -142,6 +172,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: changelog
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
 
       - name: Create git tag
         run: |
@@ -164,5 +199,6 @@ jobs:
           fi
           gh release upload "$TAG" simeis-server_${TAG}.tar.gz --clobber
           gh release upload "$TAG" doc/manual.pdf --clobber
+          gh release upload "$TAG" simeis-server_${TAG}_docker.tar --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
