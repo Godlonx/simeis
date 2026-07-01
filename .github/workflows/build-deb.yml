@@ -7,6 +7,10 @@ name: Build Debian package
 on:
   release:
     types: [published]
+  workflow_run:
+    workflows: ["CI-Create-Update-Release"]
+    types: 
+      - completed
   workflow_dispatch:
     inputs:
       version:
@@ -14,7 +18,7 @@ on:
         required: false
         type: string
 
-jobs:
+  jobs:
   build-deb:
     runs-on: ubuntu-latest
     permissions:

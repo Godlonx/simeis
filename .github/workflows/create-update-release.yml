@@ -7,7 +7,6 @@ on:
     types: [closed]
 
 jobs:
-  
   build-changelog:
     runs-on: ubuntu-latest
     permissions:
@@ -118,11 +117,78 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
          name: release-artifacts
-         path: simeis-server_${VERSION}.tar.gz
+         path: |
+           simeis-server_*.tar.gz
+           doc/manual.pdf
+  
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: build-changelog
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        run: |
+          VERSION="${{ github.ref_name }}"
+          echo "VERSION=${VERSION#release/}" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f .github/Dockerfile \
+            -t simeis-server:${{ env.VERSION }} \
+            .
+
+      - name: Save Docker image into archive
+        run: |
+          docker image save \
+            simeis-server:${{ env.VERSION }} \
+            -o simeis-server_${{ env.VERSION }}_docker.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: simeis-server_${{ env.VERSION }}_docker.tar
+    
+  test-docker:
+    runs-on: ubuntu-latest
+    env:
+      TEST_TAG: litchipi/simeis-server:${{ github.ref_name }}
+      LATEST_TAG: litchipi/simeis-server:latest
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v7
+        with:
+          load: true
+          tags: ${{ env.TEST_TAG }}
+
+      - name: Test
+        run: |
+          docker run --rm ${{ env.TEST_TAG }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.LATEST_TAG }}
 
   create-release:
     runs-on: ubuntu-latest
-    needs: [build-artifacts, build-changelog]
+    needs: [build-artifacts, build-changelog, build-docker, test-docker]
     permissions:
       contents: write
     steps:
@@ -142,6 +208,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: changelog
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
 
       - name: Create git tag
         run: |
@@ -164,5 +235,6 @@ jobs:
           fi
           gh release upload "$TAG" simeis-server_${TAG}.tar.gz --clobber
           gh release upload "$TAG" doc/manual.pdf --clobber
+          gh release upload "$TAG" simeis-server_${TAG}_docker.tar --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
