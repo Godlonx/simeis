@@ -1,7 +1,4 @@
-ARG RUST_VERSION=1.88.0-trixie
-
-
-FROM rust:${RUST_VERSION} AS builder
+FROM rust:1.88.0-trixie AS builder
 
 WORKDIR /app
 
@@ -10,7 +7,7 @@ COPY . .
 RUN cargo build --release
 
 # Runtime stage: minimal final image
-FROM debian:trixie-slim
+FROM debian:trixie
 
 WORKDIR /app
 
