@@ -1,6 +1,9 @@
 # Rapport du projet CI/CD
 
-Projet réalisé par Maxence MAHIEUX, Etienne LEMEE et Rémi LAURENT.
+Projet réalisé par : 
+- Maxence MAHIEUX -> @MaxenceMahieux
+- Etienne LEMEE -> @EtienneLm
+- Rémi LAURENT -> @Godlonx
 
 ## Somaire
 
