@@ -20,6 +20,7 @@ Projet réalisé par :
   - [Publication et maintenance](#publication-et-maintenance)
 - [Création d'une release](#création-dune-realease)
 - [Difficultés rencontrés](#difficultés-rencontrés)
+- [Conclusion](#conclusion)
 
 ## Organisation du dépôt
 
@@ -148,3 +149,8 @@ Au final, une seule action manuelle (fusionner la PR vers `release/*`) suffit po
 La principale difficulté du projet a été la partie 2 du TP5 : la création du paquet Debian. C'est une tâche longue qui enchaîne beaucoup d'étapes de configuration (page de manuel, service systemd, scripts d'installation `postinst`/`prerm`/`postrm`, fichier `control`, gestion de l'utilisateur système `simeis`, droits sur le binaire), et la moindre erreur casse la construction du paquet. Il nous est arrivé plusieurs fois de nous tromper dans un chemin, d'oublier d'installer une dépendance ou un fichier, ou de mal configurer le service, ce qui obligeait à recommencer et à retester l'installation sur une VM Debian à chaque correction.
 
 À cette complexité s'ajoutait celle de l'automatisation dans la CI. Il ne suffisait pas que le paquet se construise en local : il fallait que toute la chaîne fonctionne parfaitement pour que la release se crée et que le `.deb` soit généré puis attaché automatiquement. Coordonner les workflows `CI-Create-Update-Release` et `Build Debian package`, s'assurer que les artefacts étaient bien produits, uploadés au bon endroit et récupérables depuis l'URL de la release, a demandé de nombreux essais et ajustements avant d'obtenir un pipeline entièrement fonctionnel.
+
+## Conclusion
+
+Pour conclure, ce projet a été, pour chacun d'entre nous source d'apprentissage. On a vraiment apprécié de voir en profondeur les avantages et cas d'utilisations d'un CI/CD poussé. Même si celui-ci ne nous servira pas forcément complètement pour nous 3. Cela nous permettra de renforcer et optimiser nos workflows actuels sur ses projets personnels et scolaires.
+Merci au nom de nous 3 pour la formation apportée ainsi que de votre pédagogie sincère et enrichissante.
