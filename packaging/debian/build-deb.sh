@@ -2,7 +2,7 @@
 #
 # build-deb.sh — Assemble le paquet Debian "simeis" à partir du tarball de release.
 #
-# Reproduit à l'identique le paquet construit à la main pour la 1.0.0 :
+# Reproduit à l'identique le paquet construit à la main pour la 1.1.0 :
 #   - binaire dans /usr/bin/simeis (strippé)
 #   - manual.pdf + changelog (gz) + copyright dans /usr/share/doc/simeis/
 #   - man page gz dans /usr/share/man/man1/
@@ -11,7 +11,7 @@
 #   - dépendances calculées dynamiquement via dpkg-shlibdeps
 #
 # Usage : ./packaging/debian/build-deb.sh <chemin-tarball> <version>
-# Exemple : ./packaging/debian/build-deb.sh downloads/simeis-server_1.0.0.tar.gz 1.0.0
+# Exemple : ./packaging/debian/build-deb.sh downloads/simeis-server_1.1.0.tar.gz 1.1.0
 #
 set -euo pipefail
 
@@ -29,7 +29,7 @@ SHLIBS_DIR="/tmp/shlibs"                                     # dossier de travai
 echo "==> [1/16] Validation des arguments"
 if [ "$#" -ne 2 ]; then
     echo "ERREUR: usage: $0 <chemin-tarball> <version>" >&2
-    echo "        exemple: $0 downloads/simeis-server_1.0.0.tar.gz 1.0.0" >&2
+    echo "        exemple: $0 downloads/simeis-server_1.1.0.tar.gz 1.1.0" >&2
     exit 1
 fi
 TARBALL="$1"
